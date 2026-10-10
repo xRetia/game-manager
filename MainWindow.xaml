@@ -1,0 +1,81 @@
+<Window x:Class="GameManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Game Manager"
+        Width="1100" Height="700"
+        WindowState="Maximized"
+        SourceInitialized="OnSourceInit"
+        KeyDown="OnWindowKeyDown">
+
+    <Window.Background>
+        <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+            <GradientStop Color="#161923"/>
+            <GradientStop Color="#0D0F15" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Background>
+
+    <DockPanel>
+
+        <!-- header -->
+        <Border DockPanel.Dock="Top" Height="70" Background="#181C22"
+                BorderBrush="#2C3240" BorderThickness="0,0,0,1">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
+                    <TextBlock Text="Game Manager" FontSize="19" FontWeight="Bold"
+                               Foreground="#EEF0F5" VerticalAlignment="Center">
+                        <TextBlock.Effect>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#6082FF" Opacity="0.35"/>
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <TextBlock x:Name="CountText" Text="" Foreground="#8C94A5"
+                               FontSize="13" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                            VerticalAlignment="Center" Margin="0,0,22,0">
+                    <Button Style="{StaticResource ChromeButton}" Content="Refresh  [F5]"
+                            Click="OnRefresh" Margin="0,0,10,0"/>
+                    <Button Style="{StaticResource ChromeButton}" Content="Full Screen  [F11]"
+                            Click="OnFullScreen" Margin="0,0,10,0"/>
+                    <Button x:Name="AdvancedButton" Style="{StaticResource ChromeButton}" Content="Advanced"
+                            Click="OnAdvanced" Margin="0,0,10,0"/>
+                    <Button Style="{StaticResource ChromeButton}" Content="About" Click="OnAbout"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- game area: acrylic backdrop + touch-scrollable tile grid -->
+        <Grid>
+            <Image x:Name="AcrylicImage" Source="{x:Null}" Stretch="UniformToFill">
+                <Image.Effect>
+                    <BlurEffect KernelType="Gaussian" Radius="120"/>
+                </Image.Effect>
+            </Image>
+            <Border Background="#D212141B" IsHitTestVisible="False"/>
+
+            <ScrollViewer x:Name="Scroller"
+                          VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled"
+                          PanningMode="VerticalOnly"
+                          ManipulationBoundaryFeedback="OnManipulationBoundary">
+                <ItemsControl x:Name="TilesControl" MouseDoubleClick="OnTileDoubleClick">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="5" VerticalAlignment="Top"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource TileButton}" Click="OnTileClick"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <TextBlock x:Name="EmptyHint" Visibility="Collapsed"
+                       Text="" Foreground="#828A9B" FontSize="15"
+                       Margin="64,56,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        </Grid>
+
+    </DockPanel>
+</Window>
