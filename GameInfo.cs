@@ -49,18 +49,21 @@ public sealed class GameInfo : INotifyPropertyChanged
         }
     }
 
-    /// <summary>Launches the game. Debounced so click + double-click paths never launch twice.</summary>
-    public void Launch()
+    /// <summary>Launches the game. Debounced so click + double-click paths never
+    /// launch twice. Returns false when debounced or on failure.</summary>
+    public bool Launch()
     {
-        if ((DateTime.UtcNow - _lastLaunchUtc).TotalMilliseconds < 500) return;
+        if ((DateTime.UtcNow - _lastLaunchUtc).TotalMilliseconds < 500) return false;
         _lastLaunchUtc = DateTime.UtcNow;
         try
         {
             Process.Start(new ProcessStartInfo(LnkPath) { UseShellExecute = true });
+            return true;
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
         }
     }
 

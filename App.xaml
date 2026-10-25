@@ -153,10 +153,10 @@
                                 </Trigger.ExitActions>
                             </Trigger>
 
-                            <!-- selected: soft tint only; the sliding CursorFrame carries the glow -->
+                            <!-- selected: tinted backdrop; the sliding CursorFrame carries the glow -->
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#2A3039"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#39404F"/>
+                                <Setter TargetName="bd" Property="Background" Value="#333B4A"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#4A5265"/>
                             </DataTrigger>
 
                         </ControlTemplate.Triggers>

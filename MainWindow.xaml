@@ -20,29 +20,70 @@
         <!-- header -->
         <Border DockPanel.Dock="Top" Height="70" Background="#181C22"
                 BorderBrush="#2C3240" BorderThickness="0,0,0,1">
-            <DockPanel>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
-                    <TextBlock Text="{x:Static gm:Strings.AppTitle}" FontSize="19" FontWeight="Bold"
-                               Foreground="#EEF0F5" VerticalAlignment="Center">
-                        <TextBlock.Effect>
-                            <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#6082FF" Opacity="0.35"/>
-                        </TextBlock.Effect>
-                    </TextBlock>
-                    <TextBlock x:Name="CountText" Text="" Foreground="#8C94A5"
-                               FontSize="13" VerticalAlignment="Center" Margin="18,0,0,0"/>
-                </StackPanel>
+            <Grid x:Name="HeaderRoot">
+                <DockPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
+                        <TextBlock Text="{x:Static gm:Strings.AppTitle}" FontSize="19" FontWeight="Bold"
+                                   Foreground="#EEF0F5" VerticalAlignment="Center">
+                            <TextBlock.Effect>
+                                <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#6082FF" Opacity="0.35"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
+                        <TextBlock x:Name="CountText" Text="" Foreground="#8C94A5"
+                                   FontSize="13" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                    </StackPanel>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
-                            VerticalAlignment="Center" Margin="0,0,22,0">
-                    <Button Style="{StaticResource ChromeButton}" Content="{x:Static gm:Strings.BtnRefresh}"
-                            Click="OnRefresh" Margin="0,0,10,0"/>
-                    <Button Style="{StaticResource ChromeButton}" Content="{x:Static gm:Strings.BtnFullScreen}"
-                            Click="OnFullScreen" Margin="0,0,10,0"/>
-                    <Button x:Name="AdvancedButton" Style="{StaticResource ChromeButton}" Content="{x:Static gm:Strings.BtnAdvanced}"
-                            Click="OnAdvanced" Margin="0,0,10,0"/>
-                    <Button Style="{StaticResource ChromeButton}" Content="{x:Static gm:Strings.BtnAbout}" Click="OnAbout"/>
-                </StackPanel>
-            </DockPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                VerticalAlignment="Center" Margin="0,0,22,0">
+                        <Button x:Name="RefreshButton" Style="{StaticResource ChromeButton}" Click="OnRefresh" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static gm:Strings.BtnRefresh}" Margin="7,0,0,0"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="FullScreenButton" Style="{StaticResource ChromeButton}" Click="OnFullScreen" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE740;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static gm:Strings.BtnFullScreen}" Margin="7,0,0,0"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="AdvancedButton" Style="{StaticResource ChromeButton}" Click="OnAdvanced" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static gm:Strings.BtnAdvanced}" Margin="7,0,0,0"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="AboutButton" Style="{StaticResource ChromeButton}" Click="OnAbout">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static gm:Strings.BtnAbout}" Margin="7,0,0,0"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- console-style chrome focus: glides across the header buttons
+                     while the gamepad/keyboard navigates them -->
+                <Border x:Name="ChromeFocus" IsHitTestVisible="False" Visibility="Collapsed"
+                        HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Width="80" Height="30" CornerRadius="12" Opacity="0"
+                        BorderThickness="2" BorderBrush="#A9BCFF">
+                    <Border.Effect>
+                        <DropShadowEffect ShadowDepth="0" BlurRadius="18" Color="#6082FF" Opacity="0.8"/>
+                    </Border.Effect>
+                    <Border.RenderTransform>
+                        <TranslateTransform x:Name="ChromeTransform"/>
+                    </Border.RenderTransform>
+                </Border>
+            </Grid>
         </Border>
 
         <!-- game area: acrylic backdrop + touch-scrollable tile grid -->
@@ -79,15 +120,15 @@
                     </ItemsControl>
 
                     <!-- console-style selection cursor: glides from tile to tile.
-                         BitmapCache freezes the frame + glow as a bitmap, so the slide
-                         animation just moves cached pixels instead of re-rasterizing
-                         the DropShadowEffect on every frame. -->
+                         BitmapCache freezes the frame + double-stroke glow as a bitmap,
+                         so the slide animation just moves cached pixels instead of
+                         re-rasterizing the DropShadowEffect on every frame. -->
                     <Border x:Name="CursorFrame" IsHitTestVisible="False" Visibility="Collapsed"
                             HorizontalAlignment="Left" VerticalAlignment="Top"
-                            Width="100" Height="100" CornerRadius="19" Opacity="0"
-                            BorderThickness="2.5" BorderBrush="#8DA4FF">
+                            Width="100" Height="100" CornerRadius="21" Opacity="0"
+                            BorderThickness="3" BorderBrush="#A9BCFF">
                         <Border.Effect>
-                            <DropShadowEffect ShadowDepth="0" BlurRadius="24" Color="#6082FF" Opacity="0.7"/>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="44" Color="#6082FF" Opacity="0.95"/>
                         </Border.Effect>
                         <Border.RenderTransform>
                             <TranslateTransform x:Name="CursorTransform"/>
@@ -95,6 +136,9 @@
                         <Border.CacheMode>
                             <BitmapCache/>
                         </Border.CacheMode>
+                        <!-- inner highlight ring: brighter core edge on top of the glow -->
+                        <Border BorderThickness="1.2" BorderBrush="#59FFFFFF"
+                                CornerRadius="19" Margin="1.4" IsHitTestVisible="False"/>
                     </Border>
                 </Grid>
             </ScrollViewer>
@@ -103,7 +147,8 @@
                        Text="" Foreground="#828A9B" FontSize="15"
                        Margin="64,56,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
 
-            <!-- console-style input hint, bottom-right -->
+            <!-- console-style input hint, bottom-right; swaps between gamepad
+                 and keyboard glyphs based on the last used input device -->
             <Border x:Name="InputHint" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                     Margin="0,0,22,18" IsHitTestVisible="False" Opacity="0"
                     Background="#E6151922" CornerRadius="17" Padding="15,8"
@@ -111,31 +156,86 @@
                 <Border.Effect>
                     <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#000000" Opacity="0.35"/>
                 </Border.Effect>
-                <StackPanel Orientation="Horizontal">
-                    <!-- dpad glyph -->
-                    <Grid Width="17" Height="17" VerticalAlignment="Center">
-                        <Rectangle Width="5.5" Height="16" RadiusX="1.6" RadiusY="1.6"
-                                   Fill="#7A86A0" HorizontalAlignment="Center"/>
-                        <Rectangle Width="16" Height="5.5" RadiusX="1.6" RadiusY="1.6"
-                                   Fill="#7A86A0" VerticalAlignment="Center"/>
-                        <Rectangle Width="3.5" Height="3.5" Fill="#151922"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Grid>
-                    <TextBlock Text="{x:Static gm:Strings.HintNavigate}" Foreground="#9AA3B4" FontSize="12.5"
-                               VerticalAlignment="Center" Margin="7,0,0,0"/>
+                <Grid>
+                    <!-- gamepad variant: dpad + A (shown once pad input is detected) -->
+                    <StackPanel x:Name="PadHints" Orientation="Horizontal" Visibility="Collapsed">
+                        <Grid Width="17" Height="17" VerticalAlignment="Center">
+                            <Rectangle Width="5.5" Height="16" RadiusX="1.6" RadiusY="1.6"
+                                       Fill="#7A86A0" HorizontalAlignment="Center"/>
+                            <Rectangle Width="16" Height="5.5" RadiusX="1.6" RadiusY="1.6"
+                                       Fill="#7A86A0" VerticalAlignment="Center"/>
+                            <Rectangle Width="3.5" Height="3.5" Fill="#151922"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Text="{x:Static gm:Strings.HintNavigate}" Foreground="#9AA3B4" FontSize="12.5"
+                                   VerticalAlignment="Center" Margin="7,0,0,0"/>
+                        <Rectangle Width="1" Height="12" Fill="#2C3344" Margin="13,1"
+                                   VerticalAlignment="Center"/>
+                        <Grid Width="17" Height="17" VerticalAlignment="Center">
+                            <Ellipse Fill="#242C48" Stroke="#7D93FF" StrokeThickness="1.6"/>
+                            <TextBlock Text="A" Foreground="#BAC6FF" FontSize="10.5" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Margin="0,-0.5,0,0"/>
+                        </Grid>
+                        <TextBlock Text="{x:Static gm:Strings.HintOpen}" Foreground="#9AA3B4" FontSize="12.5"
+                                   VerticalAlignment="Center" Margin="7,0,0,0"/>
+                    </StackPanel>
 
-                    <Rectangle Width="1" Height="12" Fill="#2C3344" Margin="13,1"
-                               VerticalAlignment="Center"/>
+                    <!-- keyboard variant: arrow-key cluster + Enter (default until pad input) -->
+                    <StackPanel x:Name="KeyHints" Orientation="Horizontal">
+                        <Grid Width="18" Height="18" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="7"
+                                       Foreground="#7A86A0" Grid.Row="0" Grid.Column="1"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="7"
+                                       Foreground="#7A86A0" Grid.Row="1" Grid.Column="0"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets" FontSize="7"
+                                       Foreground="#7A86A0" Grid.Row="1" Grid.Column="1"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="7"
+                                       Foreground="#7A86A0" Grid.Row="1" Grid.Column="2"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Text="{x:Static gm:Strings.HintNavigate}" Foreground="#9AA3B4" FontSize="12.5"
+                                   VerticalAlignment="Center" Margin="7,0,0,0"/>
 
-                    <!-- A button glyph -->
-                    <Grid Width="17" Height="17" VerticalAlignment="Center">
-                        <Ellipse Fill="#242C48" Stroke="#7D93FF" StrokeThickness="1.6"/>
-                        <TextBlock Text="A" Foreground="#BAC6FF" FontSize="10.5" FontWeight="Bold"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Margin="0,-0.5,0,0"/>
+                        <Rectangle Width="1" Height="12" Fill="#2C3344" Margin="13,1"
+                                   VerticalAlignment="Center"/>
+
+                        <TextBlock Text="&#xE751;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                                   Foreground="#BAC6FF" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Static gm:Strings.HintOpen}" Foreground="#9AA3B4" FontSize="12.5"
+                                   VerticalAlignment="Center" Margin="7,0,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- launch overlay: spinner + game name while a game is starting up;
+                 absorbs clicks so impatient users cannot stack launches -->
+            <Border x:Name="LaunchOverlay" Visibility="Collapsed" Opacity="0"
+                    Background="#C40E1116">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid Width="58" Height="58" HorizontalAlignment="Center"
+                          RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <RotateTransform x:Name="LaunchSpinner"/>
+                        </Grid.RenderTransform>
+                        <Ellipse Width="58" Height="58" Stroke="#26FFFFFF" StrokeThickness="4.5"/>
+                        <Ellipse Width="58" Height="58" Stroke="#8DA4FF" StrokeThickness="4.5"
+                                 StrokeDashArray="27.5 9.2" StrokeDashOffset="4"/>
                     </Grid>
-                    <TextBlock Text="{x:Static gm:Strings.HintOpen}" Foreground="#9AA3B4" FontSize="12.5"
-                               VerticalAlignment="Center" Margin="7,0,0,0"/>
+                    <TextBlock x:Name="LaunchText" Text="" Foreground="#C9D2E8" FontSize="15"
+                               HorizontalAlignment="Center" Margin="0,20,0,0"/>
                 </StackPanel>
             </Border>
         </Grid>

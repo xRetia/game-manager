@@ -43,29 +43,6 @@ public static class Strings
     public static string MenuInstallService => Zh ? "安装系统服务（开机自启）" : "Install system service (auto start)";
     public static string MenuRemoveService => Zh ? "卸载系统服务" : "Remove system service";
 
-    // ---- remote-session GPU (Advanced menu) ----
-
-    public static string RemoteGpuEnabled => Zh
-        ? "远程会话 GPU 加速：已启用"
-        : "Remote-session GPU acceleration: enabled";
-    public static string RemoteGpuDisabled => Zh
-        ? "远程会话 GPU 加速：未启用（当前为软件渲染）"
-        : "Remote-session GPU acceleration: disabled (currently software rendering)";
-    public static string MenuEnableRemoteGpu => Zh
-        ? "启用远程会话 GPU 加速（需重连会话）..."
-        : "Enable GPU acceleration for remote sessions...";
-    public static string MenuDisableRemoteGpu => Zh
-        ? "禁用远程会话 GPU 加速"
-        : "Disable GPU acceleration for remote sessions";
-
-    public static string MsgRemoteGpuOn => Zh
-        ? "已启用远程会话 GPU 加速（硬件优先枚举 + AVC444 + 硬件编码）。\n\n新建会话生效；已连接的座位请重新连接或重启后生效。"
-        : "Remote-session GPU acceleration enabled (hardware-first enumeration + AVC444 + hardware encoding).\n\nApplies to newly created sessions; reconnect existing seats or reboot to apply.";
-
-    public static string MsgRemoteGpuOff => Zh
-        ? "已禁用远程会话 GPU 加速。\n\n新建会话生效；已连接的座位请重新连接或重启后生效。"
-        : "Remote-session GPU acceleration disabled.\n\nApplies to newly created sessions; reconnect existing seats or reboot to apply.";
-
     // ---- protocol status (Advanced menu, first line) ----
 
     public static string ProtocolRegisteredAll => Zh ? "steam:// 已注册给所有用户" : "steam:// registered for all users";
@@ -94,33 +71,45 @@ public static class Strings
         ? $"未找到游戏：{name}\n将改为打开游戏管理器。"
         : $"Game not found: {name}\nOpening Game Manager instead.";
 
+    // ---- launch overlay ----
+
+    public static string Launching(string name) => Zh
+        ? $"正在启动 {name}..."
+        : $"Starting {name}...";
+
     // ---- About ----
 
     public static string AboutTitle => Zh ? "关于游戏管理器" : "About Game Manager";
 
     public static string AboutBody(string folder) => Zh
         ? "游戏管理器 2.1.2 (WPF)\n\n" +
-          "触控友好的游戏启动器。\n" +
-          "游戏快捷方式目录：\n" + folder + "\n\n" +
-          "点击游戏选中，再次点击启动（双击也可以）。\n" +
-          "方向键 + 回车，或手柄十字键/摇杆 + A/X。\n" +
-          "触摸：拖动滚动（带惯性）。\n" +
-          "F5 刷新  |  F11 全屏  |  Esc 退出全屏\n\n" +
-          "URL 协议：steam://open/bigpicture\n" +
-          "直接启动游戏：steam://run/<游戏名>\n" +
-          "无边框全屏启动：GameManager --fullscreen\n\n" +
-          "使用「高级」菜单管理 steam:// 协议与系统服务。"
+          "触控友好的游戏启动器\n" +
+          "快捷方式目录：" + folder + "\n\n" +
+          "操作\n" +
+          "· 方向键 / 手柄十字键：移动光标\n" +
+          "· Enter / A 键：打开应用\n" +
+          "· 鼠标：点击选中，再次点击启动（双击亦可）\n" +
+          "· 触摸：拖动滚动（带惯性）\n" +
+          "· F5 刷新　F11 全屏　Esc 退出全屏\n\n" +
+          "命令行与协议\n" +
+          "· GameManager --fullscreen 无边框全屏启动\n" +
+          "· steam://run/<游戏名> 直接启动游戏\n" +
+          "· steam://open/bigpicture 唤起主界面\n\n" +
+          "「高级」菜单管理 steam:// 协议与系统服务"
         : "Game Manager 2.1.2 (WPF)\n\n" +
-          "A touch-friendly game launcher.\n" +
-          "Shows shortcuts from:\n" + folder + "\n\n" +
-          "Click a game to highlight it, click again to launch (double-click works too).\n" +
-          "Arrows + Enter, or gamepad dpad/stick + A/X.\n" +
-          "Touch: drag to scroll with inertia.\n" +
-          "F5 refresh  |  F11 fullscreen  |  Esc exit fullscreen\n\n" +
-          "URL protocol: steam://open/bigpicture\n" +
-          "Launch a game directly: steam://run/<Game>\n" +
-          "Start borderless with: GameManager --fullscreen\n\n" +
-          "Use the Advanced menu to manage the steam:// protocol and the system service.";
+          "A touch-friendly game launcher\n" +
+          "Shortcuts folder: " + folder + "\n\n" +
+          "Controls\n" +
+          "· Arrows / gamepad dpad: move the cursor\n" +
+          "· Enter / A: open the app\n" +
+          "· Mouse: click to select, click again to launch (double-click works)\n" +
+          "· Touch: drag to scroll with inertia\n" +
+          "· F5 refresh　F11 fullscreen　Esc exit fullscreen\n\n" +
+          "Command line & protocol\n" +
+          "· GameManager --fullscreen　borderless fullscreen start\n" +
+          "· steam://run/<Game>　launch a game directly\n" +
+          "· steam://open/bigpicture　bring up the launcher\n\n" +
+          "The Advanced menu manages the steam:// protocol and the system service";
 
     // ---- render diagnostics (About, last line) ----
 
@@ -133,8 +122,8 @@ public static class Strings
         ? "远程会话（应用开关已启用；系统 GPU 策略已启用，应使用物理显卡）"
         : "remote session (app switch on; GPU policy on - should be on the physical GPU)";
     public static string DiagRemoteSessionAppSwitchOn => Zh
-        ? "远程会话（应用 RDP 硬件加速开关已启用；系统 GPU 策略未启用，会话内可能仍为软件渲染）[可在高级菜单中启用系统策略]"
-        : "remote session (app RDP hardware switch on; system GPU policy off - may still be software rendering in this session) [enable the system policy from the Advanced menu]";
+        ? "远程会话（系统 GPU 策略未启用，会话内可能仍为软件渲染；配置方法见 README）"
+        : "remote session (system GPU policy off - may still be software rendering in this session; see the README)";
     public static string DiagTier0 => Zh
         ? "无可用显卡加速能力（软件渲染）"
         : "no usable GPU acceleration (software rendering)";

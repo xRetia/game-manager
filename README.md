@@ -63,9 +63,9 @@ The Advanced menu in the UI covers it, all elevated:
 RDP-type sessions (including multi-seat seats) enumerate the software
 display adapter first by default, so this WPF UI silently renders on the
 CPU - while native D3D11/12 games (Unity, Unreal) still get the physical
-GPU. Two layers are needed to fix that, and both are covered:
+GPU. Two layers are needed to fix that:
 
-**Layer 1 - application (enabled by default).** The
+**Layer 1 - application (enabled by default, nothing to do).** The
 `Switch.System.Windows.Media.EnableHardwareAccelerationInRdp` runtime
 switch (a .NET 8+ WPF opt-in, baked into the exe via
 `RuntimeHostConfigurationOption` in the csproj). Without it WPF forces
@@ -73,23 +73,27 @@ software rendering whenever it detects a remote session, even when the
 system policy below exposes the physical GPU. No admin rights needed;
 effective on the next process start.
 
-**Layer 2 - system policy (Advanced menu, elevated).**
-
-- **Enable GPU acceleration for remote sessions** - sets the
-  "Use hardware graphics adapters for all Remote Desktop Services
-  sessions" policy (`bEnumerateHWBeforeSW`) so sessions enumerate the
-  physical GPU before the software adapter, prefers AVC444 for quality
-  and hardware encoding so the RDP encoder spares the CPU. Machine-wide.
-- Applies to **newly created sessions** - reconnect existing seats or
-  reboot to pick it up.
-- The About box render diagnostics tell you the current state: whether
-  you are in a remote session, whether the GPU policy is on, and the
-  measured active framerate.
-
-Equivalent registry values for layer 2 (HKLM
+**Layer 2 - system policy (manual, elevated once per machine).** The
+"Use hardware graphics adapters for all Remote Desktop Services
+sessions" group policy. Set these registry values (HKLM
 `SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services`, all DWORD 1):
-`bEnumerateHWBeforeSW`, `bAVC444Mode`, `AVCHardwareEncodePreferred`.
-Requires Windows 10 / Server 2016 or newer.
+
+```powershell
+$key = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'
+Set-ItemProperty -Path $key -Name bEnumerateHWBeforeSW -Value 1 -Type DWord
+Set-ItemProperty -Path $key -Name bAVC444Mode -Value 1 -Type DWord
+Set-ItemProperty -Path $key -Name AVCHardwareEncodePreferred -Value 1 -Type DWord
+```
+
+`bEnumerateHWBeforeSW` makes sessions enumerate the physical GPU before
+the software adapter; `bAVC444Mode` prefers the higher-quality codec and
+`AVCHardwareEncodePreferred` keeps the RDP encoder off the CPU. Requires
+Windows 10 / Server 2016 or newer, applies to **newly created sessions**
+only - reconnect existing seats or reboot to pick it up.
+
+The About box render diagnostics tell you the current state: whether you
+are in a remote session, whether the GPU policy is on, and the measured
+active framerate.
 
 With layer 1 alone the app *asks* for hardware but may still find only
 the software adapter in the session; with layer 2 alone WPF still

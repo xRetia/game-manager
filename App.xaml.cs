@@ -40,20 +40,6 @@ public partial class App : Application
             return;
         }
 
-        // Remote-session GPU acceleration policy (launched via UAC).
-        if (args.Any(a => a.Equals("--enable-remote-gpu", StringComparison.OrdinalIgnoreCase)))
-        {
-            Launcher.EnableRemoteGpu();
-            Shutdown();
-            return;
-        }
-        if (args.Any(a => a.Equals("--disable-remote-gpu", StringComparison.OrdinalIgnoreCase)))
-        {
-            Launcher.DisableRemoteGpu();
-            Shutdown();
-            return;
-        }
-
         // The Windows service body (SCM calls the exe with this argument; blocks here).
         if (args.Any(a => a.Equals("--service", StringComparison.OrdinalIgnoreCase)))
         {

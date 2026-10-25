@@ -84,12 +84,17 @@ public partial class MainWindow : Window
         {
             _padPollTimer?.Dispose();
             _padPollTimer = null;
+            _launchHideTimer?.Stop();
+            _launchHideTimer = null;
             CompositionTarget.Rendering -= OnCompositionTargetRendering;
         };
 
         // keep the selection cursor glued to its tile through relayouts
         // (window resize, column count changes, icon size changes)
         TilesHost.SizeChanged += (_, _) => MoveCursorTo(_selectedIndex, animate: false);
+        // the chrome focus frame needs the same treatment on header relayouts
+        // (fullscreen toggles, window resizes)
+        SizeChanged += (_, _) => UpdateChromeFocus(animate: false);
 
         // console-style input hint fades in shortly after the window shows up
         Loaded += (_, _) => InputHint.BeginAnimation(OpacityProperty,
@@ -98,6 +103,9 @@ public partial class MainWindow : Window
                 BeginTime = TimeSpan.FromMilliseconds(700),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
+
+        // mouse users get the keyboard-style hint glyphs
+        PreviewMouseDown += (_, _) => MarkInput(pad: false);
     }
 
     private bool _userInteracted;
@@ -304,7 +312,7 @@ public partial class MainWindow : Window
         if ((sender as FrameworkElement)?.DataContext is not GameInfo game) return;
         if (SelectedGame == game)
         {
-            game.Launch();
+            LaunchGame(game);
             return;
         }
         SelectGame(Games.IndexOf(game), scroll: true);
@@ -315,7 +323,7 @@ public partial class MainWindow : Window
         // double-click launches immediately (Click already highlighted on the first press)
         if ((e.OriginalSource as FrameworkElement)?.DataContext is GameInfo game)
         {
-            game.Launch();
+            LaunchGame(game);
         }
     }
 
@@ -388,26 +396,203 @@ public partial class MainWindow : Window
 
     private void Navigate(int dx, int dy)
     {
+        // chrome (top button bar) navigation: left/right cycles the buttons,
+        // down returns to the tile grid
+        if (_chromeIndex >= 0)
+        {
+            if (dy > 0)
+            {
+                ExitChrome();
+            }
+            else if (dx != 0)
+            {
+                _chromeIndex = ((_chromeIndex + dx) % 4 + 4) % 4;
+                UpdateChromeFocus(animate: true);
+            }
+            return; // already at the top edge: up is a no-op
+        }
+
         if (Games.Count == 0) return;
         if (_selectedIndex < 0)
         {
             SelectGame(0, true);
             return;
         }
+
         int columns = FindUniformGrid()?.Columns ?? 1;
+
+        // moving up from the first row jumps to the top button bar,
+        // the same way consoles hand the dpad over to header actions
+        if (dy < 0 && _selectedIndex < columns)
+        {
+            EnterChrome();
+            return;
+        }
+
         int index = _selectedIndex + dx + dy * columns;
         SelectGame(Math.Clamp(index, 0, Games.Count - 1), true);
     }
 
     private void ConfirmSelection()
     {
+        if (_chromeIndex >= 0)
+        {
+            TriggerChromeButton();
+            return;
+        }
         if (Games.Count == 0) return;
         if (_selectedIndex < 0)
         {
             SelectGame(0, true);
             return;
         }
-        Games[_selectedIndex].Launch();
+        LaunchGame(Games[_selectedIndex]);
+    }
+
+    // ---------------- chrome (header buttons) navigation ----------------
+
+    // -1 = the tile grid has the cursor; 0..3 = the header buttons
+    // (refresh / fullscreen / advanced / about)
+    private int _chromeIndex = -1;
+
+    private FrameworkElement[] ChromeButtons =>
+        new[] { RefreshButton, FullScreenButton, AdvancedButton, AboutButton };
+
+    private void EnterChrome()
+    {
+        _chromeIndex = 0;
+        CursorFrame.Visibility = Visibility.Collapsed; // tile cursor yields to the chrome focus
+        ChromeFocus.Visibility = Visibility.Visible;
+        ChromeFocus.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)));
+        UpdateChromeFocus(animate: false);
+    }
+
+    private void ExitChrome()
+    {
+        if (_chromeIndex < 0) return;
+        _chromeIndex = -1;
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(160));
+        fade.Completed += (_, _) => ChromeFocus.Visibility = Visibility.Collapsed;
+        ChromeFocus.BeginAnimation(OpacityProperty, fade);
+
+        // bring the tile cursor back where it was
+        if (_selectedIndex >= 0 && _selectedIndex < Games.Count)
+        {
+            CursorFrame.Visibility = Visibility.Visible;
+            MoveCursorTo(_selectedIndex, animate: false);
+        }
+    }
+
+    /// <summary>Places the chrome focus frame over the button at _chromeIndex.
+    /// Reads the transform mid-animation so quick cycles chain into a glide.</summary>
+    private void UpdateChromeFocus(bool animate)
+    {
+        if (_chromeIndex < 0) return;
+        var btn = ChromeButtons[_chromeIndex];
+        var rect = btn.TransformToAncestor(HeaderRoot)
+                      .TransformBounds(new Rect(btn.RenderSize));
+
+        double x = rect.Left - 4;
+        double y = rect.Top - 4;
+        ChromeFocus.Width = rect.Width + 8;
+        ChromeFocus.Height = rect.Height + 8;
+
+        if (animate)
+        {
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            ChromeTransform.BeginAnimation(TranslateTransform.XProperty,
+                new DoubleAnimation(ChromeTransform.X, x, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease });
+            ChromeTransform.BeginAnimation(TranslateTransform.YProperty,
+                new DoubleAnimation(ChromeTransform.Y, y, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease });
+        }
+        else
+        {
+            ChromeTransform.BeginAnimation(TranslateTransform.XProperty, null);
+            ChromeTransform.BeginAnimation(TranslateTransform.YProperty, null);
+            ChromeTransform.X = x;
+            ChromeTransform.Y = y;
+        }
+    }
+
+    private void TriggerChromeButton()
+    {
+        switch (_chromeIndex)
+        {
+            case 0:
+                OnRefresh(null!, null!);
+                ExitChrome();
+                break;
+            case 1:
+                OnFullScreen(null!, null!);
+                ExitChrome();
+                break;
+            case 2:
+                OnAdvanced(null!, null!); // the open menu takes over; chrome stays
+                break;
+            case 3:
+                OnAbout(null!, null!);
+                ExitChrome();
+                break;
+        }
+    }
+
+    // ---------------- launch overlay ----------------
+
+    // Games take seconds to show a window after Process.Start; without feedback
+    // users tap repeatedly and stack launches. The overlay shows a spinner plus
+    // the game name, absorbs all clicks, and ignores pad/keyboard navigation
+    // until it fades.
+    private DispatcherTimer? _launchHideTimer;
+
+    /// <summary>Single UI launch path: starts the game and shows the loading overlay.</summary>
+    private void LaunchGame(GameInfo game)
+    {
+        if (!game.Launch()) return; // debounced or failed - no overlay either
+
+        LaunchText.Text = Strings.Launching(game.Name);
+        LaunchOverlay.Visibility = Visibility.Visible;
+        LaunchOverlay.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(140)));
+        LaunchSpinner.BeginAnimation(RotateTransform.AngleProperty,
+            new DoubleAnimation(0, 360, TimeSpan.FromMilliseconds(900))
+            {
+                RepeatBehavior = RepeatBehavior.Forever
+            });
+
+        _launchHideTimer?.Stop();
+        _launchHideTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.8) };
+        _launchHideTimer.Tick += (_, _) =>
+        {
+            _launchHideTimer?.Stop();
+            LaunchSpinner.BeginAnimation(RotateTransform.AngleProperty, null);
+            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(320));
+            fade.Completed += (_, _) => LaunchOverlay.Visibility = Visibility.Collapsed;
+            LaunchOverlay.BeginAnimation(OpacityProperty, fade);
+        };
+        _launchHideTimer.Start();
+    }
+
+    /// <summary>True while the launch overlay is up: navigation input is on hold.</summary>
+    private bool Launching => LaunchOverlay.Visibility == Visibility.Visible;
+
+    // ---------------- input-hint auto detection ----------------
+
+    // The bottom-right hint bar mirrors the last used input device: gamepad input
+    // swaps it to dpad/A glyphs, keyboard/mouse swaps it to arrow-key/Enter glyphs.
+    private bool _hintPadMode;
+
+    private void MarkInput(bool pad)
+    {
+        if (_hintPadMode == pad) return;
+        _hintPadMode = pad;
+        UpdateInputHint();
+    }
+
+    private void UpdateInputHint()
+    {
+        PadHints.Visibility = _hintPadMode ? Visibility.Visible : Visibility.Collapsed;
+        KeyHints.Visibility = _hintPadMode ? Visibility.Collapsed : Visibility.Visible;
     }
 
     // ---------------- sliding selection cursor ----------------
@@ -505,9 +690,15 @@ public partial class MainWindow : Window
             // navigating - and launch games on A - while the user plays a
             // fullscreen game with the same pad. Keyboard/touch are unaffected:
             // they only ever reach a focused window anyway.
-            if (_hwnd != IntPtr.Zero && GetForegroundWindow() != _hwnd)
+            // Exception: while OUR Advanced menu is open the foreground window is
+            // the menu's popup HWND - same process, same intent - so input passes.
+            if (_hwnd != IntPtr.Zero)
             {
-                return;
+                IntPtr fg = GetForegroundWindow();
+                if (fg != _hwnd && !IsOwnProcess(fg))
+                {
+                    return;
+                }
             }
             if (!GamePad.Poll(out int dx, out int dy, out bool confirm)) return;
             Dispatcher.BeginInvoke(new Action(() => HandlePadInput(dx, dy, confirm)));
@@ -515,6 +706,23 @@ public partial class MainWindow : Window
         finally
         {
             Interlocked.Exchange(ref _padPollBusy, 0);
+        }
+    }
+
+    /// <summary>True only while the Advanced menu is open and the given window
+    /// belongs to this process (the menu popup). MessageBoxes and other apps
+    /// still block pad input.</summary>
+    private bool IsOwnProcess(IntPtr hwnd)
+    {
+        if (_openMenu == null || hwnd == IntPtr.Zero) return false;
+        try
+        {
+            GetWindowThreadProcessId(hwnd, out uint pid);
+            return pid == (uint)Environment.ProcessId;
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -532,6 +740,35 @@ public partial class MainWindow : Window
     /// <summary>Gamepad state machine; runs on the UI thread.</summary>
     private void HandlePadInput(int dx, int dy, bool confirm)
     {
+        if (Launching) return; // a game is starting: hold navigation until the overlay fades
+        if (dx != 0 || dy != 0 || confirm) MarkInput(pad: true);
+
+        // while the Advanced menu is open the pad drives the menu instead
+        if (_openMenu is { } menu)
+        {
+            if (_menuItems.Count > 0)
+            {
+                if (dx != 0 || dy != 0)
+                {
+                    int dir = dy != 0 ? dy : dx; // vertical list: map left/right to up/down
+                    int next = _menuIndex;
+                    do
+                    {
+                        next = ((next + (dir > 0 ? 1 : -1)) % _menuItems.Count + _menuItems.Count) % _menuItems.Count;
+                    } while (!_menuItems[next].IsEnabled && next != _menuIndex);
+                    _menuIndex = next;
+                    _menuItems[_menuIndex].Focus();
+                }
+                if (confirm && !_padConfirmPrev)
+                {
+                    _menuItems[_menuIndex].RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                    if (_openMenu != null) _openMenu.IsOpen = false;
+                }
+            }
+            _padConfirmPrev = confirm;
+            return;
+        }
+
         if (dx != 0 || dy != 0)
         {
             if (!_padDirActive)
@@ -671,6 +908,12 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")]
     private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO info);
 
+    // ---------------- Advanced menu (gamepad-navigable) ----------------
+
+    private ContextMenu? _openMenu;
+    private List<MenuItem> _menuItems = new();
+    private int _menuIndex;
+
     private void OnAdvanced(object sender, RoutedEventArgs e)
     {
         // Colors/rounded chrome come from the implicit ContextMenu styles in App.xaml.
@@ -697,18 +940,35 @@ public partial class MainWindow : Window
             () => Launcher.RunElevated("--install-service"));
         Item(Strings.MenuRemoveService, IsServiceInstalled(),
             () => Launcher.RunElevated("--uninstall-service"));
-        menu.Items.Add(new Separator());
-        Item(Launcher.RemoteGpuStatusText, false, null!);
-        Item(Strings.MenuEnableRemoteGpu, !Launcher.IsRemoteGpuEnabled(),
-            () => Launcher.RunElevated("--enable-remote-gpu"));
-        Item(Strings.MenuDisableRemoteGpu, Launcher.IsRemoteGpuEnabled(),
-            () => Launcher.RunElevated("--disable-remote-gpu"));
 
         // Standard WPF popup positioning: below the button.
         menu.PlacementTarget = AdvancedButton;
         menu.Placement = PlacementMode.Bottom;
         menu.VerticalOffset = 8;
+
+        // While the menu is open it owns the gamepad: the popup HWND is the
+        // foreground window (same process - see IsOwnProcess), and pad input
+        // drives menu navigation instead of the tile grid.
+        _openMenu = menu;
+        _menuItems = menu.Items.OfType<MenuItem>().ToList();
+        _menuIndex = 0;
+        menu.Closed += (_, _) =>
+        {
+            _openMenu = null;
+            _menuItems = new();
+            ResetPadState(); // a held direction/A must not leak back into the UI
+        };
         menu.IsOpen = true;
+        if (_menuItems.Count > 0 && _menuItems[0].IsEnabled)
+        {
+            _menuItems[0].Focus();
+        }
+        else
+        {
+            // first item is the read-only status line: start on the first action
+            _menuIndex = _menuItems.FindIndex(m => m.IsEnabled);
+            if (_menuIndex >= 0) _menuItems[_menuIndex].Focus();
+        }
     }
 
     private static bool IsServiceInstalled()
@@ -798,8 +1058,19 @@ public partial class MainWindow : Window
 
     private void OnWindowKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down or Key.Enter
+            or Key.F5 or Key.F11 or Key.Escape)
+        {
+            MarkInput(pad: false);
+        }
+        if (Launching && e.Key is Key.Left or Key.Right or Key.Up or Key.Down or Key.Enter)
+        {
+            e.Handled = true;
+            return;
+        }
         if (e.Key == Key.F5) { LoadGames(); e.Handled = true; }
         else if (e.Key == Key.F11) { ToggleFullScreen(); e.Handled = true; }
+        else if (e.Key == Key.Escape && _chromeIndex >= 0) { ExitChrome(); e.Handled = true; }
         else if (e.Key == Key.Escape && _fullScreen) { ToggleFullScreen(); e.Handled = true; }
         else if (e.Key == Key.Left) { Navigate(-1, 0); e.Handled = true; }
         else if (e.Key == Key.Right) { Navigate(1, 0); e.Handled = true; }
