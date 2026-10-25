@@ -39,6 +39,9 @@ public partial class MainWindow : Window
     private const int PadRepeatDelayTicks = 10;
     private const int PadRepeatRateTicks = 4;
 
+    // cached window handle for the foreground check in the polling callback
+    private IntPtr _hwnd;
+
     // render diagnostics for the About box
     private int _renderFrames;
     private DateTime _renderWindowStart = DateTime.UtcNow;
@@ -496,6 +499,16 @@ public partial class MainWindow : Window
         if (Interlocked.CompareExchange(ref _padPollBusy, 1, 0) != 0) return;
         try
         {
+            // Only react to the gamepad while THIS window is the foreground window
+            // of its session. joyGetPosEx reads the device regardless of window
+            // state, so without this check a backgrounded GameManager would keep
+            // navigating - and launch games on A - while the user plays a
+            // fullscreen game with the same pad. Keyboard/touch are unaffected:
+            // they only ever reach a focused window anyway.
+            if (_hwnd != IntPtr.Zero && GetForegroundWindow() != _hwnd)
+            {
+                return;
+            }
             if (!GamePad.Poll(out int dx, out int dy, out bool confirm)) return;
             Dispatcher.BeginInvoke(new Action(() => HandlePadInput(dx, dy, confirm)));
         }
@@ -503,6 +516,17 @@ public partial class MainWindow : Window
         {
             Interlocked.Exchange(ref _padPollBusy, 0);
         }
+    }
+
+    /// <summary>Clears the pad state machine. Called on Deactivated so background
+    /// presses never leak into the foreground as a repeat burst or a phantom
+    /// confirm (hence _padConfirmPrev = true: the first foreground poll with a
+    /// still-held A must not count as a fresh press).</summary>
+    private void ResetPadState()
+    {
+        _padDirActive = false;
+        _padRepeatCount = 0;
+        _padConfirmPrev = true;
     }
 
     /// <summary>Gamepad state machine; runs on the UI thread.</summary>
@@ -578,7 +602,15 @@ public partial class MainWindow : Window
     private void OnSourceInit(object sender, EventArgs e)
     {
         var hwnd = new WindowInteropHelper(this).Handle;
+        _hwnd = hwnd;
         HwndSource.FromHwnd(hwnd)?.AddHook(WndProcHook);
+
+        // Losing activation (another window takes the foreground, a menu/message
+        // box opens, the window is minimized) must freeze pad navigation: reset
+        // the auto-repeat state so a held direction does not chain into repeat on
+        // refocus, and pretend confirm was held so re-entering the foreground
+        // with A still down cannot launch anything.
+        Deactivated += (_, _) => ResetPadState();
     }
 
     private IntPtr WndProcHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
