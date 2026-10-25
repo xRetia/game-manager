@@ -105,10 +105,20 @@
                                         <BitmapCache/>
                                     </Image.CacheMode>
                                 </Image>
-                                <TextBlock Text="{Binding Name}" TextAlignment="Center"
-                                           Foreground="#D4D8E0" FontSize="13"
-                                           TextWrapping="Wrap" MaxHeight="40"
-                                           Margin="10,0,10,12"/>
+                                <!-- name: larger font, single line, ellipsized when too long;
+                                     while selected the full name scrolls (marquee) - driven
+                                     from code because the required text width is measured
+                                     at runtime -->
+                                <Border ClipToBounds="True" Margin="12,0,12,14">
+                                    <TextBlock x:Name="nameText" Text="{Binding Name}" TextAlignment="Center"
+                                               Foreground="#D4D8E0" FontSize="14.5"
+                                               TextWrapping="NoWrap"
+                                               TextTrimming="CharacterEllipsis">
+                                        <TextBlock.RenderTransform>
+                                            <TranslateTransform x:Name="nameScroll"/>
+                                        </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                </Border>
                             </StackPanel>
                         </Border>
                         <ControlTemplate.Triggers>

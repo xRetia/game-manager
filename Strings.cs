@@ -80,6 +80,14 @@ public static class Strings
     // ---- About ----
 
     public static string AboutTitle => Zh ? "关于游戏管理器" : "About Game Manager";
+    public static string AboutAuthorLabel => Zh ? "作者" : "Author";
+    public static string AboutAuthor => "苏羽茜工作室";
+    public static string AboutCopyright => Zh
+        ? "版权所有 © 2026 苏羽茜工作室"
+        : "Copyright © 2026 SuYuQian Studio";
+    public static string AboutProjectLabel => Zh ? "项目主页" : "Project";
+    public static string AboutProjectUrl => "https://github.com/xRetia/game-manager";
+    public static string AboutOpenLink => Zh ? "点击打开项目主页" : "Click to open the project page";
 
     public static string AboutBody(string folder) => Zh
         ? "游戏管理器 2.1.2 (WPF)\n\n" +

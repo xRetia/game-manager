@@ -75,13 +75,33 @@
                 <Border x:Name="ChromeFocus" IsHitTestVisible="False" Visibility="Collapsed"
                         HorizontalAlignment="Left" VerticalAlignment="Top"
                         Width="80" Height="30" CornerRadius="12" Opacity="0"
-                        BorderThickness="2" BorderBrush="#A9BCFF">
+                        BorderThickness="2" BorderBrush="#A9BCFF"
+                        RenderTransformOrigin="0.5,0.5">
                     <Border.Effect>
                         <DropShadowEffect ShadowDepth="0" BlurRadius="18" Color="#6082FF" Opacity="0.8"/>
                     </Border.Effect>
                     <Border.RenderTransform>
                         <TranslateTransform x:Name="ChromeTransform"/>
                     </Border.RenderTransform>
+                    <!-- launch stream: a light band sweeping around the frame while
+                         the selected game starts up. The gradient itself rotates,
+                         so the band hugs the frame at any size. -->
+                    <Border x:Name="ChromeStream" IsHitTestVisible="False" Visibility="Collapsed"
+                            CornerRadius="12" BorderThickness="2.2">
+                        <Border.BorderBrush>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#00000000" Offset="0"/>
+                                <GradientStop Color="#00000000" Offset="0.45"/>
+                                <GradientStop Color="#FF6082FF" Offset="0.62"/>
+                                <GradientStop Color="#FFFFFFFF" Offset="0.72"/>
+                                <GradientStop Color="#006082FF" Offset="0.9"/>
+                                <GradientStop Color="#00000000" Offset="1"/>
+                                <LinearGradientBrush.RelativeTransform>
+                                    <RotateTransform x:Name="ChromeStreamSpin" CenterX="0.5" CenterY="0.5"/>
+                                </LinearGradientBrush.RelativeTransform>
+                            </LinearGradientBrush>
+                        </Border.BorderBrush>
+                    </Border>
                 </Border>
             </Grid>
         </Border>
@@ -126,7 +146,8 @@
                     <Border x:Name="CursorFrame" IsHitTestVisible="False" Visibility="Collapsed"
                             HorizontalAlignment="Left" VerticalAlignment="Top"
                             Width="100" Height="100" CornerRadius="21" Opacity="0"
-                            BorderThickness="3" BorderBrush="#A9BCFF">
+                            BorderThickness="3" BorderBrush="#A9BCFF"
+                            RenderTransformOrigin="0.5,0.5">
                         <Border.Effect>
                             <DropShadowEffect ShadowDepth="0" BlurRadius="44" Color="#6082FF" Opacity="0.95"/>
                         </Border.Effect>
@@ -136,9 +157,29 @@
                         <Border.CacheMode>
                             <BitmapCache/>
                         </Border.CacheMode>
-                        <!-- inner highlight ring: brighter core edge on top of the glow -->
-                        <Border BorderThickness="1.2" BorderBrush="#59FFFFFF"
-                                CornerRadius="19" Margin="1.4" IsHitTestVisible="False"/>
+                        <Grid>
+                            <!-- inner highlight ring: brighter core edge on top of the glow -->
+                            <Border BorderThickness="1.2" BorderBrush="#59FFFFFF"
+                                    CornerRadius="19" Margin="1.4" IsHitTestVisible="False"/>
+                            <!-- launch stream: same sweeping light band as the chrome
+                                 focus, sized to the tile cursor -->
+                            <Border x:Name="CursorStream" IsHitTestVisible="False" Visibility="Collapsed"
+                                    CornerRadius="20" BorderThickness="2.6" Margin="0.2">
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#00000000" Offset="0"/>
+                                        <GradientStop Color="#00000000" Offset="0.45"/>
+                                        <GradientStop Color="#FF6082FF" Offset="0.62"/>
+                                        <GradientStop Color="#FFFFFFFF" Offset="0.72"/>
+                                        <GradientStop Color="#006082FF" Offset="0.9"/>
+                                        <GradientStop Color="#00000000" Offset="1"/>
+                                        <LinearGradientBrush.RelativeTransform>
+                                            <RotateTransform x:Name="CursorStreamSpin" CenterX="0.5" CenterY="0.5"/>
+                                        </LinearGradientBrush.RelativeTransform>
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
+                            </Border>
+                        </Grid>
                     </Border>
                 </Grid>
             </ScrollViewer>
@@ -181,61 +222,94 @@
                                    VerticalAlignment="Center" Margin="7,0,0,0"/>
                     </StackPanel>
 
-                    <!-- keyboard variant: arrow-key cluster + Enter (default until pad input) -->
+                    <!-- keyboard variant: vector arrow-key cluster + Enter keycap
+                         (default until pad input) -->
                     <StackPanel x:Name="KeyHints" Orientation="Horizontal">
-                        <Grid Width="18" Height="18" VerticalAlignment="Center">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition/>
-                                <ColumnDefinition/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition/>
-                                <RowDefinition/>
-                            </Grid.RowDefinitions>
-                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="7"
-                                       Foreground="#7A86A0" Grid.Row="0" Grid.Column="1"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="7"
-                                       Foreground="#7A86A0" Grid.Row="1" Grid.Column="0"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets" FontSize="7"
-                                       Foreground="#7A86A0" Grid.Row="1" Grid.Column="1"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="7"
-                                       Foreground="#7A86A0" Grid.Row="1" Grid.Column="2"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
+                        <!-- four arrow keycaps: up / left / down / right -->
+                        <Canvas Width="31" Height="20" VerticalAlignment="Center">
+                            <Border Canvas.Left="11" Canvas.Top="0" Width="9" Height="9"
+                                    CornerRadius="2" BorderThickness="1"
+                                    BorderBrush="#7A86A0" Background="#1E242F">
+                                <Path Data="M1.9,4.6 L3.5,2.4 L5.1,4.6" Stroke="#9AA3B4"
+                                      StrokeThickness="1.1" StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                            </Border>
+                            <Border Canvas.Left="0" Canvas.Top="11" Width="9" Height="9"
+                                    CornerRadius="2" BorderThickness="1"
+                                    BorderBrush="#7A86A0" Background="#1E242F">
+                                <Path Data="M4.6,1.9 L2.4,3.5 L4.6,5.1" Stroke="#9AA3B4"
+                                      StrokeThickness="1.1" StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                            </Border>
+                            <Border Canvas.Left="11" Canvas.Top="11" Width="9" Height="9"
+                                    CornerRadius="2" BorderThickness="1"
+                                    BorderBrush="#7A86A0" Background="#1E242F">
+                                <Path Data="M1.9,2.4 L3.5,4.6 L5.1,2.4" Stroke="#9AA3B4"
+                                      StrokeThickness="1.1" StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                            </Border>
+                            <Border Canvas.Left="22" Canvas.Top="11" Width="9" Height="9"
+                                    CornerRadius="2" BorderThickness="1"
+                                    BorderBrush="#7A86A0" Background="#1E242F">
+                                <Path Data="M2.4,1.9 L4.6,3.5 L2.4,5.1" Stroke="#9AA3B4"
+                                      StrokeThickness="1.1" StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                            </Border>
+                        </Canvas>
                         <TextBlock Text="{x:Static gm:Strings.HintNavigate}" Foreground="#9AA3B4" FontSize="12.5"
                                    VerticalAlignment="Center" Margin="7,0,0,0"/>
 
                         <Rectangle Width="1" Height="12" Fill="#2C3344" Margin="13,1"
                                    VerticalAlignment="Center"/>
 
-                        <TextBlock Text="&#xE751;" FontFamily="Segoe MDL2 Assets" FontSize="13"
-                                   Foreground="#BAC6FF" VerticalAlignment="Center"/>
+                        <!-- Enter keycap: wide, like the real key. The return glyph
+                             is drawn symmetric about the keycap's centerline
+                             (bar + chevron share y = 6.5, the exact middle) so
+                             it reads straight instead of sagging to one side -->
+                        <Border Width="23" Height="13" CornerRadius="3" BorderThickness="1"
+                                BorderBrush="#7D93FF" Background="#242C48"
+                                VerticalAlignment="Center">
+                            <Path Data="M17.2,2.9 L17.2,6.5 L5.8,6.5 M8.7,4.1 L5.8,6.5 L8.7,8.9"
+                                  Stroke="#BAC6FF" StrokeThickness="1.4" StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                        </Border>
                         <TextBlock Text="{x:Static gm:Strings.HintOpen}" Foreground="#9AA3B4" FontSize="12.5"
                                    VerticalAlignment="Center" Margin="7,0,0,0"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- launch overlay: spinner + game name while a game is starting up;
-                 absorbs clicks so impatient users cannot stack launches -->
-            <Border x:Name="LaunchOverlay" Visibility="Collapsed" Opacity="0"
-                    Background="#C40E1116">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Grid Width="58" Height="58" HorizontalAlignment="Center"
-                          RenderTransformOrigin="0.5,0.5">
+            <!-- launch toast: small bottom-center pill with a spinner + the game
+                 name while a game is starting up. Purely informational - the
+                 launcher stays fully usable; repeated launches of the same game
+                 are already debounced inside GameInfo.Launch(). -->
+            <Border x:Name="LaunchToast" Visibility="Collapsed" Opacity="0"
+                    HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                    Margin="0,0,0,58"
+                    Background="#E6151922" CornerRadius="19" Padding="18,11"
+                    BorderBrush="#2C3344" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#000000" Opacity="0.35"/>
+                </Border.Effect>
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="LaunchToastShift" Y="8"/>
+                </Border.RenderTransform>
+                <StackPanel Orientation="Horizontal">
+                    <Grid Width="24" Height="24" RenderTransformOrigin="0.5,0.5"
+                          VerticalAlignment="Center">
                         <Grid.RenderTransform>
                             <RotateTransform x:Name="LaunchSpinner"/>
                         </Grid.RenderTransform>
-                        <Ellipse Width="58" Height="58" Stroke="#26FFFFFF" StrokeThickness="4.5"/>
-                        <Ellipse Width="58" Height="58" Stroke="#8DA4FF" StrokeThickness="4.5"
-                                 StrokeDashArray="27.5 9.2" StrokeDashOffset="4"/>
+                        <Ellipse Width="24" Height="24" Stroke="#26FFFFFF" StrokeThickness="2.8"/>
+                        <!-- clean 3/4 arc: dash + gap in stroke-thickness units must
+                             exactly cover the circumference (2*pi*12 = 75.4px =
+                             26.93 * 2.8), so the pattern never wraps into a stray
+                             second segment - one symmetric arc, no lopsided spin -->
+                        <Ellipse Width="24" Height="24" Stroke="#8DA4FF" StrokeThickness="2.8"
+                                 StrokeDashArray="20.2 6.73" StrokeDashCap="Round"/>
                     </Grid>
-                    <TextBlock x:Name="LaunchText" Text="" Foreground="#C9D2E8" FontSize="15"
-                               HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                    <TextBlock x:Name="LaunchText" Text="" Foreground="#D3DBEC" FontSize="15"
+                               VerticalAlignment="Center" Margin="12,0,3,0"/>
                 </StackPanel>
             </Border>
         </Grid>

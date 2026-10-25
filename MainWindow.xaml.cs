@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -12,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Threading;
 
 namespace GameManager;
@@ -35,6 +37,7 @@ public partial class MainWindow : Window
     private int _padPollBusy;
     private bool _padDirActive;
     private bool _padConfirmPrev;
+    private bool _padBackPrev;
     private int _padRepeatCount;
     private const int PadRepeatDelayTicks = 10;
     private const int PadRepeatRateTicks = 4;
@@ -242,7 +245,9 @@ public partial class MainWindow : Window
 
         foreach (string file in files.OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
         {
-            Games.Add(new GameInfo(file, ShellIcons.GetIconSource(file, 256)));
+            var game = new GameInfo(file, ShellIcons.GetIconSource(file, 256));
+            game.PropertyChanged += OnGamePropertyChanged; // drives the name marquee
+            Games.Add(game);
         }
 
         CountText.Text = Games.Count == 0 ? Strings.CountNone
@@ -537,44 +542,121 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------------- launch overlay ----------------
+    // ---------------- launch toast ----------------
 
-    // Games take seconds to show a window after Process.Start; without feedback
-    // users tap repeatedly and stack launches. The overlay shows a spinner plus
-    // the game name, absorbs all clicks, and ignores pad/keyboard navigation
-    // until it fades.
+    // Games take seconds to show a window after Process.Start; a small toast
+    // with a spinner and the game name gives that feedback without taking the
+    // whole screen over. The launcher stays fully usable - repeated launches
+    // of the same game are already debounced inside GameInfo.Launch().
     private DispatcherTimer? _launchHideTimer;
 
-    /// <summary>Single UI launch path: starts the game and shows the loading overlay.</summary>
+    /// <summary>Single UI launch path: starts the game and shows the launch toast.</summary>
     private void LaunchGame(GameInfo game)
     {
-        if (!game.Launch()) return; // debounced or failed - no overlay either
+        if (!game.Launch()) return; // debounced or failed - no toast either
+
+        // console-style launch feedback: short pad rumble + a streaming light
+        // band sweeping around the selection frame (whichever is visible)
+        GamePad.Rumble();
+        LaunchBurst(CursorFrame, "CursorStream", "CursorStreamSpin");
+        LaunchBurst(ChromeFocus, "ChromeStream", "ChromeStreamSpin");
 
         LaunchText.Text = Strings.Launching(game.Name);
-        LaunchOverlay.Visibility = Visibility.Visible;
-        LaunchOverlay.BeginAnimation(OpacityProperty,
-            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(140)));
+        ShowLaunchToast();
+    }
+
+    private void ShowLaunchToast()
+    {
+        _launchHideTimer?.Stop();
+        LaunchToast.Visibility = Visibility.Visible;
+
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        LaunchToast.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)) { EasingFunction = ease });
+        LaunchToastShift.BeginAnimation(TranslateTransform.YProperty,
+            new DoubleAnimation(8, 0, TimeSpan.FromMilliseconds(220)) { EasingFunction = ease });
         LaunchSpinner.BeginAnimation(RotateTransform.AngleProperty,
             new DoubleAnimation(0, 360, TimeSpan.FromMilliseconds(900))
             {
                 RepeatBehavior = RepeatBehavior.Forever
             });
 
-        _launchHideTimer?.Stop();
-        _launchHideTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.8) };
+        _launchHideTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.2) };
         _launchHideTimer.Tick += (_, _) =>
         {
             _launchHideTimer?.Stop();
-            LaunchSpinner.BeginAnimation(RotateTransform.AngleProperty, null);
-            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(320));
-            fade.Completed += (_, _) => LaunchOverlay.Visibility = Visibility.Collapsed;
-            LaunchOverlay.BeginAnimation(OpacityProperty, fade);
+            HideLaunchToast();
         };
         _launchHideTimer.Start();
     }
 
-    /// <summary>True while the launch overlay is up: navigation input is on hold.</summary>
-    private bool Launching => LaunchOverlay.Visibility == Visibility.Visible;
+    private void HideLaunchToast()
+    {
+        LaunchSpinner.BeginAnimation(RotateTransform.AngleProperty, null);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(260)) { EasingFunction = ease };
+        fade.Completed += (_, _) => LaunchToast.Visibility = Visibility.Collapsed;
+        LaunchToast.BeginAnimation(OpacityProperty, fade);
+        LaunchToastShift.BeginAnimation(TranslateTransform.YProperty,
+            new DoubleAnimation(0, 8, TimeSpan.FromMilliseconds(260)) { EasingFunction = ease });
+    }
+
+    /// <summary>Launch burst on a focus frame: a light band sweeps around the
+    /// frame for two laps while the glow breathes up and settles back. Runs on
+    /// whichever frame is currently visible; re-launches restart it cleanly.</summary>
+    private void LaunchBurst(FrameworkElement frame, string streamName, string spinName)
+    {
+        if (frame.Visibility != Visibility.Visible) return;
+        if (frame.FindName(streamName) is not Border stream) return;
+        if (frame.FindName(spinName) is not RotateTransform spin) return;
+
+        // reset any previous burst, then light the band up (quick fade-in
+        // softens the pop)
+        stream.BeginAnimation(OpacityProperty, null);
+        stream.Visibility = Visibility.Visible;
+        stream.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150)));
+
+        // two slow laps around the frame, then fade the band out. Linear easing:
+        // the band flows at a constant pace (~1.6 s per lap) - an eased start
+        // would snap it around several times in the first moments.
+        var sweep = new DoubleAnimation(0, 720, TimeSpan.FromMilliseconds(3200));
+        sweep.Completed += (_, _) =>
+        {
+            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            fade.Completed += (_, _) =>
+            {
+                spin.BeginAnimation(RotateTransform.AngleProperty, null);
+                stream.Visibility = Visibility.Collapsed;
+            };
+            stream.BeginAnimation(OpacityProperty, fade);
+        };
+        spin.BeginAnimation(RotateTransform.AngleProperty, sweep);
+
+        // glow breathing: brighter + wider while the band sweeps its first lap,
+        // settling back over the second (same 1.6 s half-period as the sweep)
+        if (frame.Effect is DropShadowEffect glow)
+        {
+            glow.BeginAnimation(DropShadowEffect.OpacityProperty, null);
+            glow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, null);
+            double restOpacity = glow.Opacity;
+            double restBlur = glow.BlurRadius;
+            var breathe = new CubicEase { EasingMode = EasingMode.EaseInOut };
+            glow.BeginAnimation(DropShadowEffect.OpacityProperty,
+                new DoubleAnimation(restOpacity, 1, TimeSpan.FromMilliseconds(1600))
+                {
+                    AutoReverse = true, EasingFunction = breathe
+                });
+            glow.BeginAnimation(DropShadowEffect.BlurRadiusProperty,
+                new DoubleAnimation(restBlur, restBlur * 1.5, TimeSpan.FromMilliseconds(1600))
+                {
+                    AutoReverse = true, EasingFunction = breathe
+                });
+        }
+    }
 
     // ---------------- input-hint auto detection ----------------
 
@@ -593,6 +675,51 @@ public partial class MainWindow : Window
     {
         PadHints.Visibility = _hintPadMode ? Visibility.Visible : Visibility.Collapsed;
         KeyHints.Visibility = _hintPadMode ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    // ---------------- tile name marquee ----------------
+
+    // Long names are ellipsized while unselected; the selected tile scrolls its
+    // full name back and forth so nothing is unreachable. Widths are measured
+    // at runtime, so the animation is driven from code, not from the template.
+
+    private void OnGamePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(GameInfo.IsSelected)) return;
+        if (sender is not GameInfo game) return;
+        int index = Games.IndexOf(game);
+        if (index < 0) return;
+        if (TilesControl.ItemContainerGenerator.ContainerFromIndex(index)
+                is not FrameworkElement container) return;
+
+        var text = FindVisualChild<TextBlock>(container);
+        if (text == null || text.RenderTransform is not TranslateTransform scroll) return;
+
+        if (game.IsSelected) StartMarquee(text, scroll);
+        else StopMarquee(text, scroll);
+    }
+
+    private void StartMarquee(TextBlock text, TranslateTransform scroll)
+    {
+        if (text.Parent is not FrameworkElement clip) return;
+        double overflow = text.ActualWidth - clip.ActualWidth;
+        if (overflow <= 4) return; // fits: nothing to scroll
+
+        text.TextAlignment = TextAlignment.Left; // anchor left so the scroll reveals the tail
+        var sweep = new DoubleAnimation(0, -overflow, TimeSpan.FromSeconds(Math.Max(1.2, overflow / 45.0)))
+        {
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+        };
+        scroll.BeginAnimation(TranslateTransform.XProperty, sweep);
+    }
+
+    private void StopMarquee(TextBlock text, TranslateTransform scroll)
+    {
+        scroll.BeginAnimation(TranslateTransform.XProperty, null);
+        scroll.X = 0;
+        text.TextAlignment = TextAlignment.Center;
     }
 
     // ---------------- sliding selection cursor ----------------
@@ -700,8 +827,13 @@ public partial class MainWindow : Window
                     return;
                 }
             }
-            if (!GamePad.Poll(out int dx, out int dy, out bool confirm)) return;
-            Dispatcher.BeginInvoke(new Action(() => HandlePadInput(dx, dy, confirm)));
+            if (!GamePad.Poll(out int dx, out int dy, out bool confirm, out bool back,
+                    out double scrollY)) return;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                HandlePadInput(dx, dy, confirm, back);
+                if (_aboutWindow is { } about) about.PadScrollY = scrollY;
+            }));
         }
         finally
         {
@@ -709,12 +841,12 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>True only while the Advanced menu is open and the given window
-    /// belongs to this process (the menu popup). MessageBoxes and other apps
-    /// still block pad input.</summary>
+    /// <summary>True while the Advanced menu or the About dialog is open and the
+    /// given window belongs to this process (the menu popup / About window).
+    /// MessageBoxes and other apps still block pad input.</summary>
     private bool IsOwnProcess(IntPtr hwnd)
     {
-        if (_openMenu == null || hwnd == IntPtr.Zero) return false;
+        if ((_openMenu == null && _aboutWindow == null) || hwnd == IntPtr.Zero) return false;
         try
         {
             GetWindowThreadProcessId(hwnd, out uint pid);
@@ -735,20 +867,64 @@ public partial class MainWindow : Window
         _padDirActive = false;
         _padRepeatCount = 0;
         _padConfirmPrev = true;
+        _padBackPrev = true;
     }
 
-    /// <summary>Gamepad state machine; runs on the UI thread.</summary>
-    private void HandlePadInput(int dx, int dy, bool confirm)
+    /// <summary>Gamepad state machine; runs on the UI thread. Directions run
+    /// through one shared press/repeat gate, so a held or noisy stick moves one
+    /// step at a time everywhere: tiles, header buttons and the Advanced menu
+    /// alike (per-poll stepping made the menu race and jitter).</summary>
+    private void HandlePadInput(int dx, int dy, bool confirm, bool back)
     {
-        if (Launching) return; // a game is starting: hold navigation until the overlay fades
-        if (dx != 0 || dy != 0 || confirm) MarkInput(pad: true);
+        if (dx != 0 || dy != 0 || confirm || back) MarkInput(pad: true);
+
+        // direction gate: one step on the initial press, auto-repeat only after
+        // a deliberate hold. Every mode below consumes the gated step.
+        bool moveNow = false;
+        if (dx != 0 || dy != 0)
+        {
+            if (!_padDirActive)
+            {
+                moveNow = true;
+                _padRepeatCount = 0;
+            }
+            else if (_padRepeatCount < PadRepeatDelayTicks)
+            {
+                // hold the direction for a moment before auto-repeat starts
+                if (++_padRepeatCount == PadRepeatDelayTicks) moveNow = true;
+            }
+            else if (++_padRepeatCount >= PadRepeatDelayTicks + PadRepeatRateTicks)
+            {
+                moveNow = true;
+                _padRepeatCount = PadRepeatDelayTicks;
+            }
+            _padDirActive = true;
+        }
+        else
+        {
+            _padDirActive = false;
+            _padRepeatCount = 0;
+        }
+
+        // About dialog: B closes it; everything else waits for the dialog
+        if (_aboutWindow is { } about)
+        {
+            if (back && !_padBackPrev)
+            {
+                _aboutWindow = null; // cleared first so a second poll cannot re-close
+                about.Close();
+            }
+            _padConfirmPrev = confirm;
+            _padBackPrev = back;
+            return;
+        }
 
         // while the Advanced menu is open the pad drives the menu instead
         if (_openMenu is { } menu)
         {
             if (_menuItems.Count > 0)
             {
-                if (dx != 0 || dy != 0)
+                if (moveNow)
                 {
                     int dir = dy != 0 ? dy : dx; // vertical list: map left/right to up/down
                     int next = _menuIndex;
@@ -765,40 +941,23 @@ public partial class MainWindow : Window
                     if (_openMenu != null) _openMenu.IsOpen = false;
                 }
             }
+            if (back && !_padBackPrev && _openMenu != null) _openMenu.IsOpen = false;
             _padConfirmPrev = confirm;
+            _padBackPrev = back;
             return;
         }
 
-        if (dx != 0 || dy != 0)
-        {
-            if (!_padDirActive)
-            {
-                Navigate(dx, dy);
-                _padRepeatCount = 0;
-            }
-            else if (_padRepeatCount < PadRepeatDelayTicks)
-            {
-                // hold the direction for a moment before auto-repeat starts
-                if (++_padRepeatCount == PadRepeatDelayTicks) Navigate(dx, dy);
-            }
-            else if (++_padRepeatCount >= PadRepeatDelayTicks + PadRepeatRateTicks)
-            {
-                Navigate(dx, dy);
-                _padRepeatCount = PadRepeatDelayTicks;
-            }
-            _padDirActive = true;
-        }
-        else
-        {
-            _padDirActive = false;
-            _padRepeatCount = 0;
-        }
+        if (moveNow) Navigate(dx, dy);
+
+        // B is the console "back" button: leaves the header button row
+        if (back && !_padBackPrev && _chromeIndex >= 0) ExitChrome();
 
         if (confirm && !_padConfirmPrev)
         {
             ConfirmSelection();
         }
         _padConfirmPrev = confirm;
+        _padBackPrev = back;
     }
 
     // ---------------- chrome ----------------
@@ -987,10 +1146,23 @@ public partial class MainWindow : Window
 
     private void OnAbout(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(this,
-            Strings.AboutBody(Launcher.LinksFolder) + "\n\n" + RenderDiagnostics(),
-            Strings.AboutTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+        var about = new AboutWindow(Strings.AboutBody(Launcher.LinksFolder), RenderDiagnostics())
+        {
+            Owner = this
+        };
+        // track it while modal so pad B can close it (see IsOwnProcess/HandlePadInput)
+        _aboutWindow = about;
+        try
+        {
+            about.ShowDialog();
+        }
+        finally
+        {
+            _aboutWindow = null;
+        }
     }
+
+    private AboutWindow? _aboutWindow;
 
     // ---------------- render diagnostics ----------------
 
@@ -1062,11 +1234,6 @@ public partial class MainWindow : Window
             or Key.F5 or Key.F11 or Key.Escape)
         {
             MarkInput(pad: false);
-        }
-        if (Launching && e.Key is Key.Left or Key.Right or Key.Up or Key.Down or Key.Enter)
-        {
-            e.Handled = true;
-            return;
         }
         if (e.Key == Key.F5) { LoadGames(); e.Handled = true; }
         else if (e.Key == Key.F11) { ToggleFullScreen(); e.Handled = true; }
