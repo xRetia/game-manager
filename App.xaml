@@ -87,15 +87,23 @@
                         <Border x:Name="bd" CornerRadius="14" Background="#1C2028"
                                 BorderThickness="1.4" BorderBrush="Transparent" Margin="10">
                             <StackPanel>
+                                <!-- BitmapCache: every tile icon is rasterized once
+                                     (shadow included); scrolling just moves cached
+                                     bitmaps instead of re-running the drop shadow.
+                                     Bottom margin is >= shadow extent so the cached
+                                     bitmap boundary never clips the glow. -->
                                 <Image Source="{Binding Icon}"
                                        Width="{Binding IconSize}"
                                        Height="{Binding IconSize}"
-                                       Margin="14,14,14,8"
+                                       Margin="14,14,14,12"
                                        Stretch="Uniform">
                                     <Image.Effect>
                                         <DropShadowEffect ShadowDepth="3" BlurRadius="10"
                                                           Color="#000000" Opacity="0.55"/>
                                     </Image.Effect>
+                                    <Image.CacheMode>
+                                        <BitmapCache/>
+                                    </Image.CacheMode>
                                 </Image>
                                 <TextBlock Text="{Binding Name}" TextAlignment="Center"
                                            Foreground="#D4D8E0" FontSize="13"

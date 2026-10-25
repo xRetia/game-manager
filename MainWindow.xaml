@@ -46,10 +46,15 @@
 
         <!-- game area: acrylic backdrop + touch-scrollable tile grid -->
         <Grid>
+            <!-- backdrop: BitmapCache caches the 120px blur result so scrolling/tile
+                 animations never re-run the full-screen gaussian every frame -->
             <Image x:Name="AcrylicImage" Source="{x:Null}" Stretch="UniformToFill">
                 <Image.Effect>
                     <BlurEffect KernelType="Gaussian" Radius="120"/>
                 </Image.Effect>
+                <Image.CacheMode>
+                    <BitmapCache/>
+                </Image.CacheMode>
             </Image>
             <Border Background="#D212141B" IsHitTestVisible="False"/>
 
@@ -72,7 +77,10 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <!-- console-style selection cursor: glides from tile to tile -->
+                    <!-- console-style selection cursor: glides from tile to tile.
+                         BitmapCache freezes the frame + glow as a bitmap, so the slide
+                         animation just moves cached pixels instead of re-rasterizing
+                         the DropShadowEffect on every frame. -->
                     <Border x:Name="CursorFrame" IsHitTestVisible="False" Visibility="Collapsed"
                             HorizontalAlignment="Left" VerticalAlignment="Top"
                             Width="100" Height="100" CornerRadius="19" Opacity="0"
@@ -83,6 +91,9 @@
                         <Border.RenderTransform>
                             <TranslateTransform x:Name="CursorTransform"/>
                         </Border.RenderTransform>
+                        <Border.CacheMode>
+                            <BitmapCache/>
+                        </Border.CacheMode>
                     </Border>
                 </Grid>
             </ScrollViewer>

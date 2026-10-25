@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -26,13 +27,23 @@ public partial class MainWindow : Window
     private WindowState _savedState = WindowState.Normal;
     private ResizeMode _savedResize = ResizeMode.CanResize;
 
-    // gamepad polling: 30 ms tick; auto-repeat ~300 ms hold delay, then one step every ~120 ms
-    private readonly DispatcherTimer _padTimer = new() { Interval = TimeSpan.FromMilliseconds(30) };
+    // Gamepad polling runs on a thread-pool timer: joyGetPosEx is a blocking WinMM
+    // call and can stall for tens of milliseconds with slow drivers/wireless
+    // adapters. Keeping it off the UI thread is what keeps animations and touch
+    // scrolling smooth. 30 ms tick; auto-repeat ~300 ms hold, then ~120 ms/step.
+    private Timer? _padPollTimer;
+    private int _padPollBusy;
     private bool _padDirActive;
     private bool _padConfirmPrev;
     private int _padRepeatCount;
     private const int PadRepeatDelayTicks = 10;
     private const int PadRepeatRateTicks = 4;
+
+    // render diagnostics for the About box
+    private int _renderFrames;
+    private DateTime _renderWindowStart = DateTime.UtcNow;
+    private double _lastFps;
+    private bool _fpsMeasured;
 
     public MainWindow(bool forceFront = false)
     {
@@ -60,8 +71,18 @@ public partial class MainWindow : Window
             LoadGames();
         };
 
-        _padTimer.Tick += (_, _) => PollGamePad();
-        _padTimer.Start();
+        _padPollTimer = new Timer(_ => PadPollCallback(), null, 0, 30);
+
+        // framerate sampling (only fires while something renders, i.e. it measures
+        // the active framerate, not idle) for the About diagnostics line
+        CompositionTarget.Rendering += OnCompositionTargetRendering;
+
+        Closed += (_, _) =>
+        {
+            _padPollTimer?.Dispose();
+            _padPollTimer = null;
+            CompositionTarget.Rendering -= OnCompositionTargetRendering;
+        };
 
         // keep the selection cursor glued to its tile through relayouts
         // (window resize, column count changes, icon size changes)
@@ -467,10 +488,25 @@ public partial class MainWindow : Window
 
     // ---------------- gamepad ----------------
 
-    private void PollGamePad()
+    /// <summary>Thread-pool callback: polls the pads off the UI thread and marshals the
+    /// result over. Re-entry guarded - a slow joyGetPosEx never piles up calls.</summary>
+    private void PadPollCallback()
     {
-        if (!GamePad.Poll(out int dx, out int dy, out bool confirm)) return;
+        if (Interlocked.CompareExchange(ref _padPollBusy, 1, 0) != 0) return;
+        try
+        {
+            if (!GamePad.Poll(out int dx, out int dy, out bool confirm)) return;
+            Dispatcher.BeginInvoke(new Action(() => HandlePadInput(dx, dy, confirm)));
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _padPollBusy, 0);
+        }
+    }
 
+    /// <summary>Gamepad state machine; runs on the UI thread.</summary>
+    private void HandlePadInput(int dx, int dy, bool confirm)
+    {
         if (dx != 0 || dy != 0)
         {
             if (!_padDirActive)
@@ -663,9 +699,70 @@ public partial class MainWindow : Window
             "URL protocol: steam://open/bigpicture\n" +
             "Launch a game directly: steam://run/<Game>\n" +
             "Start borderless with: GameManager --fullscreen\n\n" +
-            "Use the Advanced menu to manage the steam:// protocol and the system service.",
+            "Use the Advanced menu to manage the steam:// protocol and the system service." +
+            "\n\n" + RenderDiagnostics(),
             "About Game Manager", MessageBoxButton.OK, MessageBoxImage.Information);
     }
+
+    // ---------------- render diagnostics ----------------
+
+    /// <summary>Self-check shown in About: whether WPF is likely running on hardware,
+    /// and the measured active framerate. Best-effort inference - WPF exposes no
+    /// direct "am I software rendering right now" query.</summary>
+    private string RenderDiagnostics()
+    {
+        string mode;
+        try
+        {
+            object? hwOff = Microsoft.Win32.Registry.GetValue(
+                @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Avalon.Graphics",
+                "DisableHWAcceleration", null);
+            if (hwOff is int v && v != 0)
+            {
+                mode = "hardware acceleration disabled system-wide (software rendering)";
+            }
+            else if (GetSystemMetrics(0x1000) != 0) // SM_REMOTESESSION
+            {
+                // Multi-seat seats are usually RDP-type sessions - the classic cause
+                // of "everything feels sluggish with no obvious reason".
+                mode = "remote session (RDP/multi-seat sessions usually fall back to software rendering)";
+            }
+            else if (RenderCapability.Tier >> 16 == 0)
+            {
+                mode = "no usable GPU acceleration (software rendering)";
+            }
+            else
+            {
+                mode = "hardware acceleration on";
+            }
+        }
+        catch
+        {
+            mode = "hardware acceleration on";
+        }
+
+        string fpsPart = _fpsMeasured
+            ? "  |  active framerate ~" + _lastFps.ToString("0") + " fps"
+            : "";
+        return "Render: " + mode + fpsPart;
+    }
+
+    private void OnCompositionTargetRendering(object? sender, EventArgs e)
+    {
+        _renderFrames++;
+        var now = DateTime.UtcNow;
+        double seconds = (now - _renderWindowStart).TotalSeconds;
+        if (seconds >= 1.5)
+        {
+            _lastFps = _renderFrames / seconds;
+            _fpsMeasured = true;
+            _renderFrames = 0;
+            _renderWindowStart = now;
+        }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int nIndex);
 
     private void OnWindowKeyDown(object sender, KeyEventArgs e)
     {
