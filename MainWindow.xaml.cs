@@ -26,11 +26,13 @@ public partial class MainWindow : Window
     private WindowState _savedState = WindowState.Normal;
     private ResizeMode _savedResize = ResizeMode.CanResize;
 
-    // gamepad polling
-    private readonly DispatcherTimer _padTimer = new() { Interval = TimeSpan.FromMilliseconds(60) };
+    // gamepad polling: 30 ms tick; auto-repeat ~300 ms hold delay, then one step every ~120 ms
+    private readonly DispatcherTimer _padTimer = new() { Interval = TimeSpan.FromMilliseconds(30) };
     private bool _padDirActive;
     private bool _padConfirmPrev;
     private int _padRepeatCount;
+    private const int PadRepeatDelayTicks = 10;
+    private const int PadRepeatRateTicks = 4;
 
     public MainWindow(bool forceFront = false)
     {
@@ -60,6 +62,18 @@ public partial class MainWindow : Window
 
         _padTimer.Tick += (_, _) => PollGamePad();
         _padTimer.Start();
+
+        // keep the selection cursor glued to its tile through relayouts
+        // (window resize, column count changes, icon size changes)
+        TilesHost.SizeChanged += (_, _) => MoveCursorTo(_selectedIndex, animate: false);
+
+        // console-style input hint fades in shortly after the window shows up
+        Loaded += (_, _) => InputHint.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 0.95, TimeSpan.FromMilliseconds(450))
+            {
+                BeginTime = TimeSpan.FromMilliseconds(700),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
     }
 
     private bool _userInteracted;
@@ -290,6 +304,7 @@ public partial class MainWindow : Window
         var game = Games[index];
         game.IsSelected = true;
         UpdateAcrylic(game);
+        MoveCursorTo(index, animate: true);
 
         if (scroll) BringIntoView(game);
     }
@@ -340,7 +355,7 @@ public partial class MainWindow : Window
             Scroller.ScrollToVerticalOffset(target);
             return;
         }
-        BeginAnimation(ScrollAnimProperty, new DoubleAnimation(from, target, TimeSpan.FromMilliseconds(240))
+        BeginAnimation(ScrollAnimProperty, new DoubleAnimation(from, target, TimeSpan.FromMilliseconds(180))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         });
@@ -368,6 +383,69 @@ public partial class MainWindow : Window
             return;
         }
         Games[_selectedIndex].Launch();
+    }
+
+    // ---------------- sliding selection cursor ----------------
+
+    private const double CursorPad = 7; // the frame floats this far outside the tile edge
+    private static readonly TimeSpan CursorSlideTime = TimeSpan.FromMilliseconds(170);
+
+    /// <summary>Places the selection frame over the tile at <paramref name="index"/>. With
+    /// animate it glides there from its current position, console-style; quick repeats read
+    /// the transform mid-animation, so they chain into one continuous glide. Snaps otherwise.</summary>
+    private void MoveCursorTo(int index, bool animate)
+    {
+        Border? card = null;
+        if (index >= 0 && index < Games.Count &&
+            TilesControl.ItemContainerGenerator.ContainerFromIndex(index) is FrameworkElement container &&
+            System.Windows.Media.VisualTreeHelper.GetChildrenCount(container) > 0 &&
+            System.Windows.Media.VisualTreeHelper.GetChild(container, 0) is Button button &&
+            System.Windows.Media.VisualTreeHelper.GetChildrenCount(button) > 0 &&
+            System.Windows.Media.VisualTreeHelper.GetChild(button, 0) is Border border)
+        {
+            card = border;
+        }
+
+        if (card is null)
+        {
+            CursorFrame.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Card bounds in the cursor's own coordinate space (the scroll content root),
+        // so the frame scrolls along with the tiles instead of staying in the viewport.
+        var rect = card.TransformToAncestor(TilesHost)
+                       .TransformBounds(new Rect(card.RenderSize));
+
+        double x = rect.Left - CursorPad;
+        double y = rect.Top - CursorPad;
+        CursorFrame.Width = rect.Width + CursorPad * 2;
+        CursorFrame.Height = rect.Height + CursorPad * 2;
+
+        bool wasHidden = CursorFrame.Visibility != Visibility.Visible;
+        if (animate && !wasHidden)
+        {
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            CursorTransform.BeginAnimation(TranslateTransform.XProperty,
+                new DoubleAnimation(CursorTransform.X, x, CursorSlideTime) { EasingFunction = ease });
+            CursorTransform.BeginAnimation(TranslateTransform.YProperty,
+                new DoubleAnimation(CursorTransform.Y, y, CursorSlideTime) { EasingFunction = ease });
+        }
+        else
+        {
+            // snap (initial placement / relayout): stop any running animation first
+            CursorTransform.BeginAnimation(TranslateTransform.XProperty, null);
+            CursorTransform.BeginAnimation(TranslateTransform.YProperty, null);
+            CursorTransform.X = x;
+            CursorTransform.Y = y;
+        }
+
+        if (wasHidden)
+        {
+            CursorFrame.Visibility = Visibility.Visible;
+            CursorFrame.BeginAnimation(OpacityProperty,
+                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)));
+        }
     }
 
     // ---------------- acrylic backdrop ----------------
@@ -400,10 +478,15 @@ public partial class MainWindow : Window
                 Navigate(dx, dy);
                 _padRepeatCount = 0;
             }
-            else if (++_padRepeatCount >= 5)
+            else if (_padRepeatCount < PadRepeatDelayTicks)
+            {
+                // hold the direction for a moment before auto-repeat starts
+                if (++_padRepeatCount == PadRepeatDelayTicks) Navigate(dx, dy);
+            }
+            else if (++_padRepeatCount >= PadRepeatDelayTicks + PadRepeatRateTicks)
             {
                 Navigate(dx, dy);
-                _padRepeatCount = 0;
+                _padRepeatCount = PadRepeatDelayTicks;
             }
             _padDirActive = true;
         }

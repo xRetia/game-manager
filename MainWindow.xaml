@@ -58,23 +58,74 @@
                           HorizontalScrollBarVisibility="Disabled"
                           PanningMode="VerticalOnly"
                           ManipulationBoundaryFeedback="OnManipulationBoundary">
-                <ItemsControl x:Name="TilesControl" MouseDoubleClick="OnTileDoubleClick">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <UniformGrid Columns="5" VerticalAlignment="Top"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Style="{StaticResource TileButton}" Click="OnTileClick"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <Grid x:Name="TilesHost">
+                    <ItemsControl x:Name="TilesControl" MouseDoubleClick="OnTileDoubleClick">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="5" VerticalAlignment="Top"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource TileButton}" Click="OnTileClick"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- console-style selection cursor: glides from tile to tile -->
+                    <Border x:Name="CursorFrame" IsHitTestVisible="False" Visibility="Collapsed"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Width="100" Height="100" CornerRadius="19" Opacity="0"
+                            BorderThickness="2.5" BorderBrush="#8DA4FF">
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="24" Color="#6082FF" Opacity="0.7"/>
+                        </Border.Effect>
+                        <Border.RenderTransform>
+                            <TranslateTransform x:Name="CursorTransform"/>
+                        </Border.RenderTransform>
+                    </Border>
+                </Grid>
             </ScrollViewer>
 
             <TextBlock x:Name="EmptyHint" Visibility="Collapsed"
                        Text="" Foreground="#828A9B" FontSize="15"
                        Margin="64,56,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+
+            <!-- console-style input hint, bottom-right -->
+            <Border x:Name="InputHint" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,22,18" IsHitTestVisible="False" Opacity="0"
+                    Background="#E6151922" CornerRadius="17" Padding="15,8"
+                    BorderBrush="#2C3344" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#000000" Opacity="0.35"/>
+                </Border.Effect>
+                <StackPanel Orientation="Horizontal">
+                    <!-- dpad glyph -->
+                    <Grid Width="17" Height="17" VerticalAlignment="Center">
+                        <Rectangle Width="5.5" Height="16" RadiusX="1.6" RadiusY="1.6"
+                                   Fill="#7A86A0" HorizontalAlignment="Center"/>
+                        <Rectangle Width="16" Height="5.5" RadiusX="1.6" RadiusY="1.6"
+                                   Fill="#7A86A0" VerticalAlignment="Center"/>
+                        <Rectangle Width="3.5" Height="3.5" Fill="#151922"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                    <TextBlock Text="Navigate" Foreground="#9AA3B4" FontSize="12.5"
+                               VerticalAlignment="Center" Margin="7,0,0,0"/>
+
+                    <Rectangle Width="1" Height="12" Fill="#2C3344" Margin="13,1"
+                               VerticalAlignment="Center"/>
+
+                    <!-- A button glyph -->
+                    <Grid Width="17" Height="17" VerticalAlignment="Center">
+                        <Ellipse Fill="#242C48" Stroke="#7D93FF" StrokeThickness="1.6"/>
+                        <TextBlock Text="A" Foreground="#BAC6FF" FontSize="10.5" FontWeight="Bold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Margin="0,-0.5,0,0"/>
+                    </Grid>
+                    <TextBlock Text="Open" Foreground="#9AA3B4" FontSize="12.5"
+                               VerticalAlignment="Center" Margin="7,0,0,0"/>
+                </StackPanel>
+            </Border>
         </Grid>
 
     </DockPanel>

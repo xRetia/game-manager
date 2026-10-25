@@ -145,39 +145,10 @@
                                 </Trigger.ExitActions>
                             </Trigger>
 
-                            <!-- selected: blue glow + accent border -->
+                            <!-- selected: soft tint only; the sliding CursorFrame carries the glow -->
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#282D38"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#6082FF"/>
-                                <DataTrigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="bd"
-                                                                            Storyboard.TargetProperty="Effect">
-                                                <DiscreteObjectKeyFrame KeyTime="0:0:0">
-                                                    <DiscreteObjectKeyFrame.Value>
-                                                        <DropShadowEffect ShadowDepth="0" BlurRadius="30"
-                                                                          Color="#6082FF" Opacity="0.9"/>
-                                                    </DiscreteObjectKeyFrame.Value>
-                                                </DiscreteObjectKeyFrame>
-                                            </ObjectAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </DataTrigger.EnterActions>
-                                <DataTrigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="bd"
-                                                                            Storyboard.TargetProperty="Effect">
-                                                <DiscreteObjectKeyFrame KeyTime="0:0:0">
-                                                    <DiscreteObjectKeyFrame.Value>
-                                                        <x:Null/>
-                                                    </DiscreteObjectKeyFrame.Value>
-                                                </DiscreteObjectKeyFrame>
-                                            </ObjectAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </DataTrigger.ExitActions>
+                                <Setter TargetName="bd" Property="Background" Value="#2A3039"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#39404F"/>
                             </DataTrigger>
 
                         </ControlTemplate.Triggers>
