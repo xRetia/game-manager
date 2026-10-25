@@ -90,7 +90,7 @@ public static class Strings
     public static string AboutOpenLink => Zh ? "点击打开项目主页" : "Click to open the project page";
 
     public static string AboutBody(string folder) => Zh
-        ? "游戏管理器 2.1.2 (WPF)\n\n" +
+        ? "游戏管理器 2.1.3 (WPF)\n\n" +
           "触控友好的游戏启动器\n" +
           "快捷方式目录：" + folder + "\n\n" +
           "操作\n" +
@@ -104,7 +104,7 @@ public static class Strings
           "· steam://run/<游戏名> 直接启动游戏\n" +
           "· steam://open/bigpicture 唤起主界面\n\n" +
           "「高级」菜单管理 steam:// 协议与系统服务"
-        : "Game Manager 2.1.2 (WPF)\n\n" +
+        : "Game Manager 2.1.3 (WPF)\n\n" +
           "A touch-friendly game launcher\n" +
           "Shortcuts folder: " + folder + "\n\n" +
           "Controls\n" +

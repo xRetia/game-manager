@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>GameManager</RootNamespace>
     <AssemblyName>GameManager</AssemblyName>
-    <Version>2.1.2</Version>
+    <Version>2.1.3</Version>
   </PropertyGroup>
 
   <!-- WPF: allow the hardware render path inside RDP-type sessions (multi-seat
