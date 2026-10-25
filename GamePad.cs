@@ -35,6 +35,10 @@ internal static class GamePad
     private const int AxisCenter = 32768;
     private const int AxisDeadzone = 20000;
 
+    // dwPOV reports JOY_POVCENTERED (0xffff = 65535) when the dpad is neutral;
+    // 0..35999 are the only valid directional readings (hundredths of a degree).
+    private const int PovMax = 35999;
+
     // Xbox controller button mapping as seen by DirectInput: 1 = A, 2 = B, 3 = X, 4 = Y.
     private const int ButtonA = 1 << 0;
     private const int ButtonX = 1 << 2;
@@ -63,14 +67,21 @@ internal static class GamePad
             if (joyGetPosEx(id, ref info) != 0) continue;
             anyPad = true;
 
-            // Dpad: POV in hundredths of a degree; -1 means neutral.
-            if (info.dwPOV >= 0)
+            // Dpad: POV in hundredths of a degree, valid range 0..35999 while pressed.
+            // Neutral is JOY_POVCENTERED (0xffff), NOT -1. A naive ">= 0" check reads
+            // the centered value as 655.35 deg > 315 deg, i.e. a constant phantom
+            // "up" that drags the selection back to the first tile every repeat
+            // cycle and also fights keyboard/touch input. Only accept 0..35999.
+            // Boundaries are inclusive so the exact 45 deg diagonals reported by
+            // discrete POV (JOY_RETURNPOV) register as up-right/down-right/... .
+            int pov = info.dwPOV;
+            if (pov >= 0 && pov <= PovMax)
             {
-                double deg = info.dwPOV / 100.0;
-                if (deg < 45 || deg > 315) dy = -1;
-                else if (deg > 135 && deg < 225) dy = 1;
-                if (deg > 45 && deg < 135) dx = 1;
-                else if (deg > 225 && deg < 315) dx = -1;
+                double deg = pov / 100.0;
+                if (deg <= 45 || deg >= 315) dy = -1;
+                else if (deg >= 135 && deg <= 225) dy = 1;
+                if (deg >= 45 && deg <= 135) dx = 1;
+                else if (deg >= 225 && deg <= 315) dx = -1;
             }
 
             // Left stick axes (0..65535, centered at 32768).
