@@ -76,7 +76,7 @@ public static class Strings
     public static string AboutTitle => Zh ? "关于游戏管理器" : "About Game Manager";
 
     public static string AboutBody(string folder) => Zh
-        ? "游戏管理器 2.0 (WPF)\n\n" +
+        ? "游戏管理器 2.1 (WPF)\n\n" +
           "触控友好的游戏启动器。\n" +
           "游戏快捷方式目录：\n" + folder + "\n\n" +
           "点击游戏选中，再次点击启动（双击也可以）。\n" +
@@ -87,7 +87,7 @@ public static class Strings
           "直接启动游戏：steam://run/<游戏名>\n" +
           "无边框全屏启动：GameManager --fullscreen\n\n" +
           "使用「高级」菜单管理 steam:// 协议与系统服务。"
-        : "Game Manager 2.0 (WPF)\n\n" +
+        : "Game Manager 2.1 (WPF)\n\n" +
           "A touch-friendly game launcher.\n" +
           "Shows shortcuts from:\n" + folder + "\n\n" +
           "Click a game to highlight it, click again to launch (double-click works too).\n" +
