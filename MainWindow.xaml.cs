@@ -719,14 +719,15 @@ public partial class MainWindow : Window
             }
             else if (GetSystemMetrics(0x1000) != 0) // SM_REMOTESESSION
             {
-                // Multi-seat seats are usually RDP-type sessions - the classic cause
-                // of "everything feels sluggish with no obvious reason". When the
-                // hardware-graphics policy is already on, the session still reports
-                // as remote but should be rendering on the physical GPU; a reboot-
-                // style hint otherwise (policy only affects newly created sessions).
+                // Multi-seat seats are usually RDP-type sessions. The app-level
+                // RDP hardware switch (Switch.System.Windows.Media.
+                // EnableHardwareAccelerationInRdp) is baked into the exe, so the
+                // deciding factor at runtime is the system policy: with it the
+                // session enumerates the physical GPU (WPF then uses it); without
+                // it only the software adapter is visible in the session.
                 mode = Launcher.IsRemoteGpuEnabled()
                     ? Strings.DiagRemoteSessionGpuOn
-                    : Strings.DiagRemoteSession + "  " + Strings.DiagRemoteSessionHint;
+                    : Strings.DiagRemoteSessionAppSwitchOn;
             }
             else if (RenderCapability.Tier >> 16 == 0)
             {

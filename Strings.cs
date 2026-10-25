@@ -129,15 +129,12 @@ public static class Strings
     public static string DiagHwDisabled => Zh
         ? "硬件加速已被系统禁用（软件渲染）"
         : "hardware acceleration disabled system-wide (software rendering)";
-    public static string DiagRemoteSession => Zh
-        ? "远程会话（RDP/多座位环境通常退化为软件渲染）"
-        : "remote session (RDP/multi-seat sessions usually fall back to software rendering)";
     public static string DiagRemoteSessionGpuOn => Zh
-        ? "远程会话（GPU 加速策略已启用，应使用物理显卡）"
-        : "remote session (GPU acceleration policy on - should be on the physical GPU)";
-    public static string DiagRemoteSessionHint => Zh
-        ? "[可在高级菜单中启用 GPU 加速]"
-        : "[enable GPU acceleration from the Advanced menu]";
+        ? "远程会话（应用开关已启用；系统 GPU 策略已启用，应使用物理显卡）"
+        : "remote session (app switch on; GPU policy on - should be on the physical GPU)";
+    public static string DiagRemoteSessionAppSwitchOn => Zh
+        ? "远程会话（应用 RDP 硬件加速开关已启用；系统 GPU 策略未启用，会话内可能仍为软件渲染）[可在高级菜单中启用系统策略]"
+        : "remote session (app RDP hardware switch on; system GPU policy off - may still be software rendering in this session) [enable the system policy from the Advanced menu]";
     public static string DiagTier0 => Zh
         ? "无可用显卡加速能力（软件渲染）"
         : "no usable GPU acceleration (software rendering)";

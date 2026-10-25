@@ -63,23 +63,38 @@ The Advanced menu in the UI covers it, all elevated:
 RDP-type sessions (including multi-seat seats) enumerate the software
 display adapter first by default, so this WPF UI silently renders on the
 CPU - while native D3D11/12 games (Unity, Unreal) still get the physical
-GPU. The Advanced menu has a one-click policy switch to fix that:
+GPU. Two layers are needed to fix that, and both are covered:
+
+**Layer 1 - application (enabled by default).** The
+`Switch.System.Windows.Media.EnableHardwareAccelerationInRdp` runtime
+switch (a .NET 8+ WPF opt-in, baked into the exe via
+`RuntimeHostConfigurationOption` in the csproj). Without it WPF forces
+software rendering whenever it detects a remote session, even when the
+system policy below exposes the physical GPU. No admin rights needed;
+effective on the next process start.
+
+**Layer 2 - system policy (Advanced menu, elevated).**
 
 - **Enable GPU acceleration for remote sessions** - sets the
   "Use hardware graphics adapters for all Remote Desktop Services
-  sessions" policy (`bEnumerateHWBeforeSW`), prefers AVC444 for quality
-  and hardware encoding so the RDP encoder spares the CPU. Elevated,
-  machine-wide.
-- The change applies to **newly created sessions** - reconnect existing
-  seats or reboot to pick it up.
+  sessions" policy (`bEnumerateHWBeforeSW`) so sessions enumerate the
+  physical GPU before the software adapter, prefers AVC444 for quality
+  and hardware encoding so the RDP encoder spares the CPU. Machine-wide.
+- Applies to **newly created sessions** - reconnect existing seats or
+  reboot to pick it up.
 - The About box render diagnostics tell you the current state: whether
   you are in a remote session, whether the GPU policy is on, and the
   measured active framerate.
 
-Equivalent registry values (HKLM
+Equivalent registry values for layer 2 (HKLM
 `SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services`, all DWORD 1):
 `bEnumerateHWBeforeSW`, `bAVC444Mode`, `AVCHardwareEncodePreferred`.
 Requires Windows 10 / Server 2016 or newer.
+
+With layer 1 alone the app *asks* for hardware but may still find only
+the software adapter in the session; with layer 2 alone WPF still
+refuses the hardware path because it sees a remote session. Both on =
+the WPF UI renders on the physical GPU inside RDP-type sessions.
 
 ## Rebuilding while it's running
 
