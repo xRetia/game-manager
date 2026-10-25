@@ -60,7 +60,7 @@ public sealed class GameInfo : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Game Manager", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

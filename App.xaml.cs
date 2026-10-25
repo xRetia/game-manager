@@ -78,9 +78,8 @@ public partial class App : Application
                     Shutdown();
                     return;
                 }
-                MessageBox.Show(
-                    $"Game not found: {gameName}\nOpening Game Manager instead.",
-                    "Game Manager", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Strings.MsgGameNotFound(gameName),
+                    Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {

@@ -1,7 +1,8 @@
 <Window x:Class="GameManager.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Game Manager"
+        xmlns:gm="clr-namespace:GameManager"
+        Title="{x:Static gm:Strings.AppTitle}"
         Width="1100" Height="700"
         WindowState="Maximized"
         SourceInitialized="OnSourceInit"
@@ -21,7 +22,7 @@
                 BorderBrush="#2C3240" BorderThickness="0,0,0,1">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
-                    <TextBlock Text="Game Manager" FontSize="19" FontWeight="Bold"
+                    <TextBlock Text="{x:Static gm:Strings.AppTitle}" FontSize="19" FontWeight="Bold"
                                Foreground="#EEF0F5" VerticalAlignment="Center">
                         <TextBlock.Effect>
                             <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#6082FF" Opacity="0.35"/>
@@ -33,13 +34,13 @@
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
                             VerticalAlignment="Center" Margin="0,0,22,0">
-                    <Button Style="{StaticResource ChromeButton}" Content="Refresh  [F5]"
+                    <Button Style="{StaticResource ChromeButton}" Content="{x:Static gm:Strings.BtnRefresh}"
                             Click="OnRefresh" Margin="0,0,10,0"/>
-                    <Button Style="{StaticResource ChromeButton}" Content="Full Screen  [F11]"
+                    <Button Style="{StaticResource ChromeButton}" Content="{x:Static gm:Strings.BtnFullScreen}"
                             Click="OnFullScreen" Margin="0,0,10,0"/>
-                    <Button x:Name="AdvancedButton" Style="{StaticResource ChromeButton}" Content="Advanced"
+                    <Button x:Name="AdvancedButton" Style="{StaticResource ChromeButton}" Content="{x:Static gm:Strings.BtnAdvanced}"
                             Click="OnAdvanced" Margin="0,0,10,0"/>
-                    <Button Style="{StaticResource ChromeButton}" Content="About" Click="OnAbout"/>
+                    <Button Style="{StaticResource ChromeButton}" Content="{x:Static gm:Strings.BtnAbout}" Click="OnAbout"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -120,7 +121,7 @@
                         <Rectangle Width="3.5" Height="3.5" Fill="#151922"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
-                    <TextBlock Text="Navigate" Foreground="#9AA3B4" FontSize="12.5"
+                    <TextBlock Text="{x:Static gm:Strings.HintNavigate}" Foreground="#9AA3B4" FontSize="12.5"
                                VerticalAlignment="Center" Margin="7,0,0,0"/>
 
                     <Rectangle Width="1" Height="12" Fill="#2C3344" Margin="13,1"
@@ -133,7 +134,7 @@
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Margin="0,-0.5,0,0"/>
                     </Grid>
-                    <TextBlock Text="Open" Foreground="#9AA3B4" FontSize="12.5"
+                    <TextBlock Text="{x:Static gm:Strings.HintOpen}" Foreground="#9AA3B4" FontSize="12.5"
                                VerticalAlignment="Center" Margin="7,0,0,0"/>
                 </StackPanel>
             </Border>

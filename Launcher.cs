@@ -16,7 +16,6 @@ internal static class Launcher
     internal static string LinksFolder => Config.Current.LinksFolder;
 
     private const string ProtocolKey = @"Software\Classes\steam";
-    private const string AppTitle = "Game Manager";
 
     internal static string ExePath =>
         Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "";
@@ -26,19 +25,17 @@ internal static class Launcher
         try
         {
             WriteProtocol(Registry.LocalMachine);
-            MessageBox.Show("steam:// protocol registered for all users.",
-                AppTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Strings.MsgRegisteredAll,
+                Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (UnauthorizedAccessException)
         {
-            MessageBox.Show(
-                "Administrator rights are required to register for all users.\n" +
-                "Please accept the UAC prompt.",
-                AppTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Strings.MsgNeedAdmin,
+                Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -57,22 +54,18 @@ internal static class Launcher
                 Registry.CurrentUser.DeleteSubKeyTree(ProtocolKey, false);
                 removed = true;
             }
-            MessageBox.Show(removed
-                    ? "steam:// protocol registration removed."
-                    : "No Game Manager registration was found. Nothing to unregister.",
-                AppTitle, MessageBoxButton.OK,
+            MessageBox.Show(removed ? Strings.MsgRemoved : Strings.MsgNothingToRemove,
+                Strings.AppTitle, MessageBoxButton.OK,
                 removed ? MessageBoxImage.Information : MessageBoxImage.Warning);
         }
         catch (UnauthorizedAccessException)
         {
-            MessageBox.Show(
-                "Administrator rights are required to remove the system-wide registration.\n" +
-                "Please accept the UAC prompt.",
-                AppTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Strings.MsgNeedAdmin,
+                Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -124,9 +117,9 @@ internal static class Launcher
         {
             bool all = IsRegisteredAllUsers();
             bool current = IsRegisteredOn(Registry.CurrentUser);
-            if (all) return "steam:// registered for all users";
-            if (current) return "steam:// registered for this user only";
-            return "steam:// not registered";
+            if (all) return Strings.ProtocolRegisteredAll;
+            if (current) return Strings.ProtocolRegisteredUser;
+            return Strings.ProtocolNotRegistered;
         }
     }
 
@@ -196,7 +189,7 @@ internal static class Launcher
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

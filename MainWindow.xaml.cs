@@ -234,10 +234,11 @@ public partial class MainWindow : Window
             Games.Add(new GameInfo(file, ShellIcons.GetIconSource(file, 256)));
         }
 
-        CountText.Text = Games.Count == 0 ? "No games" : (Games.Count == 1 ? "1 game" : $"{Games.Count} games");
+        CountText.Text = Games.Count == 0 ? Strings.CountNone
+            : (Games.Count == 1 ? Strings.CountOne : Strings.CountMany(Games.Count));
         if (Games.Count == 0)
         {
-            EmptyHint.Text = "No games found.\n\nAdd .lnk files to:\n" + Launcher.LinksFolder;
+            EmptyHint.Text = Strings.EmptyHint(Launcher.LinksFolder);
             EmptyHint.Visibility = Visibility.Visible;
         }
 
@@ -654,15 +655,15 @@ public partial class MainWindow : Window
         }
 
         Item(Launcher.ProtocolStatusText, false, null!);
-        Item("Register protocol for all users...", !Launcher.IsRegisteredAllUsers(),
+        Item(Strings.MenuRegisterAll, !Launcher.IsRegisteredAllUsers(),
             () => Launcher.RunElevated("--register-all"));
-        Item("Unregister protocol from system", true,
+        Item(Strings.MenuUnregisterAll, true,
             () => Launcher.RunElevated("--unregister-all"));
         menu.Items.Add(new Separator());
-        Item("System service: " + (IsServiceInstalled() ? "installed" : "not installed"), false, null!);
-        Item("Install system service (auto start)", !IsServiceInstalled(),
+        Item(IsServiceInstalled() ? Strings.MenuServiceInstalled : Strings.MenuServiceNotInstalled, false, null!);
+        Item(Strings.MenuInstallService, !IsServiceInstalled(),
             () => Launcher.RunElevated("--install-service"));
-        Item("Remove system service", IsServiceInstalled(),
+        Item(Strings.MenuRemoveService, IsServiceInstalled(),
             () => Launcher.RunElevated("--uninstall-service"));
 
         // Standard WPF popup positioning: below the button.
@@ -689,19 +690,8 @@ public partial class MainWindow : Window
     private void OnAbout(object sender, RoutedEventArgs e)
     {
         MessageBox.Show(this,
-            "Game Manager 2.0 (WPF)\n\n" +
-            "A touch-friendly game launcher.\n" +
-            "Shows shortcuts from:\n" + Launcher.LinksFolder + "\n\n" +
-            "Click a game to highlight it, click again to launch (double-click works too).\n" +
-            "Arrows + Enter, or gamepad dpad/stick + A/X.\n" +
-            "Touch: drag to scroll with inertia.\n" +
-            "F5 refresh  |  F11 fullscreen  |  Esc exit fullscreen\n\n" +
-            "URL protocol: steam://open/bigpicture\n" +
-            "Launch a game directly: steam://run/<Game>\n" +
-            "Start borderless with: GameManager --fullscreen\n\n" +
-            "Use the Advanced menu to manage the steam:// protocol and the system service." +
-            "\n\n" + RenderDiagnostics(),
-            "About Game Manager", MessageBoxButton.OK, MessageBoxImage.Information);
+            Strings.AboutBody(Launcher.LinksFolder) + "\n\n" + RenderDiagnostics(),
+            Strings.AboutTitle, MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     // ---------------- render diagnostics ----------------
@@ -719,32 +709,30 @@ public partial class MainWindow : Window
                 "DisableHWAcceleration", null);
             if (hwOff is int v && v != 0)
             {
-                mode = "hardware acceleration disabled system-wide (software rendering)";
+                mode = Strings.DiagHwDisabled;
             }
             else if (GetSystemMetrics(0x1000) != 0) // SM_REMOTESESSION
             {
                 // Multi-seat seats are usually RDP-type sessions - the classic cause
                 // of "everything feels sluggish with no obvious reason".
-                mode = "remote session (RDP/multi-seat sessions usually fall back to software rendering)";
+                mode = Strings.DiagRemoteSession;
             }
             else if (RenderCapability.Tier >> 16 == 0)
             {
-                mode = "no usable GPU acceleration (software rendering)";
+                mode = Strings.DiagTier0;
             }
             else
             {
-                mode = "hardware acceleration on";
+                mode = Strings.DiagHwOn;
             }
         }
         catch
         {
-            mode = "hardware acceleration on";
+            mode = Strings.DiagHwOn;
         }
 
-        string fpsPart = _fpsMeasured
-            ? "  |  active framerate ~" + _lastFps.ToString("0") + " fps"
-            : "";
-        return "Render: " + mode + fpsPart;
+        string fpsPart = _fpsMeasured ? "  |  " + Strings.DiagFps(_lastFps) : "";
+        return Strings.DiagRender(mode + fpsPart);
     }
 
     private void OnCompositionTargetRendering(object? sender, EventArgs e)
