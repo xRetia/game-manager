@@ -43,6 +43,29 @@ public static class Strings
     public static string MenuInstallService => Zh ? "安装系统服务（开机自启）" : "Install system service (auto start)";
     public static string MenuRemoveService => Zh ? "卸载系统服务" : "Remove system service";
 
+    // ---- remote-session GPU (Advanced menu) ----
+
+    public static string RemoteGpuEnabled => Zh
+        ? "远程会话 GPU 加速：已启用"
+        : "Remote-session GPU acceleration: enabled";
+    public static string RemoteGpuDisabled => Zh
+        ? "远程会话 GPU 加速：未启用（当前为软件渲染）"
+        : "Remote-session GPU acceleration: disabled (currently software rendering)";
+    public static string MenuEnableRemoteGpu => Zh
+        ? "启用远程会话 GPU 加速（需重连会话）..."
+        : "Enable GPU acceleration for remote sessions...";
+    public static string MenuDisableRemoteGpu => Zh
+        ? "禁用远程会话 GPU 加速"
+        : "Disable GPU acceleration for remote sessions";
+
+    public static string MsgRemoteGpuOn => Zh
+        ? "已启用远程会话 GPU 加速（硬件优先枚举 + AVC444 + 硬件编码）。\n\n新建会话生效；已连接的座位请重新连接或重启后生效。"
+        : "Remote-session GPU acceleration enabled (hardware-first enumeration + AVC444 + hardware encoding).\n\nApplies to newly created sessions; reconnect existing seats or reboot to apply.";
+
+    public static string MsgRemoteGpuOff => Zh
+        ? "已禁用远程会话 GPU 加速。\n\n新建会话生效；已连接的座位请重新连接或重启后生效。"
+        : "Remote-session GPU acceleration disabled.\n\nApplies to newly created sessions; reconnect existing seats or reboot to apply.";
+
     // ---- protocol status (Advanced menu, first line) ----
 
     public static string ProtocolRegisteredAll => Zh ? "steam:// 已注册给所有用户" : "steam:// registered for all users";
@@ -109,6 +132,12 @@ public static class Strings
     public static string DiagRemoteSession => Zh
         ? "远程会话（RDP/多座位环境通常退化为软件渲染）"
         : "remote session (RDP/multi-seat sessions usually fall back to software rendering)";
+    public static string DiagRemoteSessionGpuOn => Zh
+        ? "远程会话（GPU 加速策略已启用，应使用物理显卡）"
+        : "remote session (GPU acceleration policy on - should be on the physical GPU)";
+    public static string DiagRemoteSessionHint => Zh
+        ? "[可在高级菜单中启用 GPU 加速]"
+        : "[enable GPU acceleration from the Advanced menu]";
     public static string DiagTier0 => Zh
         ? "无可用显卡加速能力（软件渲染）"
         : "no usable GPU acceleration (software rendering)";

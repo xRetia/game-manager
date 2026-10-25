@@ -665,6 +665,12 @@ public partial class MainWindow : Window
             () => Launcher.RunElevated("--install-service"));
         Item(Strings.MenuRemoveService, IsServiceInstalled(),
             () => Launcher.RunElevated("--uninstall-service"));
+        menu.Items.Add(new Separator());
+        Item(Launcher.RemoteGpuStatusText, false, null!);
+        Item(Strings.MenuEnableRemoteGpu, !Launcher.IsRemoteGpuEnabled(),
+            () => Launcher.RunElevated("--enable-remote-gpu"));
+        Item(Strings.MenuDisableRemoteGpu, Launcher.IsRemoteGpuEnabled(),
+            () => Launcher.RunElevated("--disable-remote-gpu"));
 
         // Standard WPF popup positioning: below the button.
         menu.PlacementTarget = AdvancedButton;
@@ -714,8 +720,13 @@ public partial class MainWindow : Window
             else if (GetSystemMetrics(0x1000) != 0) // SM_REMOTESESSION
             {
                 // Multi-seat seats are usually RDP-type sessions - the classic cause
-                // of "everything feels sluggish with no obvious reason".
-                mode = Strings.DiagRemoteSession;
+                // of "everything feels sluggish with no obvious reason". When the
+                // hardware-graphics policy is already on, the session still reports
+                // as remote but should be rendering on the physical GPU; a reboot-
+                // style hint otherwise (policy only affects newly created sessions).
+                mode = Launcher.IsRemoteGpuEnabled()
+                    ? Strings.DiagRemoteSessionGpuOn
+                    : Strings.DiagRemoteSession + "  " + Strings.DiagRemoteSessionHint;
             }
             else if (RenderCapability.Tier >> 16 == 0)
             {

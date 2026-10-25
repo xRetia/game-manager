@@ -123,6 +123,89 @@ internal static class Launcher
         }
     }
 
+    // ---------------- remote-session GPU acceleration ----------------
+
+    // Group policy: "Use hardware graphics adapters for all Remote Desktop
+    // Services sessions" (Remote Session Environment). Without it RDP-type
+    // sessions enumerate the software adapter first, so WPF's D3D9Ex render
+    // path silently falls back to CPU rendering - the classic cause of a
+    // sluggish multi-seat UI while native D3D11/12 games (Unity/UE) still run
+    // on the physical GPU.
+    private const string TsPolicyKey =
+        @"SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services";
+
+    /// <summary>True when the hardware-graphics-for-RDS-sessions policy is enabled.</summary>
+    internal static bool IsRemoteGpuEnabled()
+    {
+        try
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(TsPolicyKey);
+            return key?.GetValue("bEnumerateHWBeforeSW") is int v && v != 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Enables hardware GPU rendering for all RDP-type sessions:
+    /// hardware adapters enumerated before software (bEnumerateHWBeforeSW),
+    /// AVC444 preferred for quality, and hardware encoding preferred so the
+    /// RDP encoder does not eat a CPU core at high framerates. Takes effect
+    /// for newly connected sessions (existing ones must reconnect).</summary>
+    internal static void EnableRemoteGpu()
+    {
+        try
+        {
+            using var key = Registry.LocalMachine.CreateSubKey(TsPolicyKey);
+            key.SetValue("bEnumerateHWBeforeSW", 1, RegistryValueKind.DWord);
+            key.SetValue("bAVC444Mode", 1, RegistryValueKind.DWord);
+            key.SetValue("AVCHardwareEncodePreferred", 1, RegistryValueKind.DWord);
+            MessageBox.Show(Strings.MsgRemoteGpuOn,
+                Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            MessageBox.Show(Strings.MsgNeedAdmin,
+                Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>Reverts the remote GPU policy values set by <see cref="EnableRemoteGpu"/>.</summary>
+    internal static void DisableRemoteGpu()
+    {
+        try
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(TsPolicyKey, writable: true);
+            if (key != null)
+            {
+                foreach (string name in new[] { "bEnumerateHWBeforeSW", "bAVC444Mode", "AVCHardwareEncodePreferred" })
+                {
+                    key.DeleteValue(name, throwOnMissingValue: false);
+                }
+            }
+            MessageBox.Show(Strings.MsgRemoteGpuOff,
+                Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            MessageBox.Show(Strings.MsgNeedAdmin,
+                Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>Status line for the Advanced menu.</summary>
+    internal static string RemoteGpuStatusText =>
+        IsRemoteGpuEnabled() ? Strings.RemoteGpuEnabled : Strings.RemoteGpuDisabled;
+
     internal static void RunElevated(string argument)
     {
         try
