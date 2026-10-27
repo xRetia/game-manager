@@ -14,10 +14,40 @@ public static class Strings
     // ---- chrome ----
 
     public static string AppTitle => Zh ? "游戏管理器" : "Game Manager";
-    public static string BtnRefresh => Zh ? "刷新 [F5]" : "Refresh  [F5]";
-    public static string BtnFullScreen => Zh ? "全屏 [F11]" : "Full Screen  [F11]";
+    public static string BtnRefresh => Zh ? "刷新" : "Refresh";
+    public static string BtnFullScreen => Zh ? "全屏" : "Full Screen";
     public static string BtnAdvanced => Zh ? "高级" : "Advanced";
+    public static string BtnPower => Zh ? "电源" : "Power";
     public static string BtnAbout => Zh ? "关于" : "About";
+
+    // ---- power menu & power dialog ----
+
+    public static string PowerExitStream => Zh ? "断开" : "Disconnect";
+    public static string PowerLogOff => Zh ? "注销用户" : "Sign Out";
+    public static string PowerShutdown => Zh ? "关机" : "Shut Down";
+    public static string PowerRestart => Zh ? "重启" : "Restart";
+
+    // ---- power dialog (one panel for every power entry point) ----
+
+    public static string PowerTitle => Zh ? "电源操作" : "Power";
+    public static string PowerNote => Zh
+        ? "关机和重启将强制执行，未保存的进度会丢失"
+        : "Shut down and restart are forced; unsaved work will be lost";
+    public static string PowerCancel => Zh ? "取消" : "Cancel";
+    public static string PowerConfirm => Zh ? "确认" : "Confirm";
+    public static string PowerEnterKey => "Enter";
+    public static string PowerPadA => "A";
+
+    // ---- second-stage confirmation (shut down / restart) ----
+
+    public static string ConfirmShutdownTitle => Zh ? "关机" : "Shut Down";
+    public static string ConfirmShutdownBody => Zh
+        ? "确定要立即强制关机吗？未保存的进度会丢失。"
+        : "Force shut down now? Unsaved work will be lost.";
+    public static string ConfirmRestartTitle => Zh ? "重启" : "Restart";
+    public static string ConfirmRestartBody => Zh
+        ? "确定要立即强制重启吗？未保存的进度会丢失。"
+        : "Force restart now? Unsaved work will be lost.";
 
     // ---- input hint (bottom-right) ----
 

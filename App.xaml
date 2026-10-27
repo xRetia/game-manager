@@ -249,12 +249,16 @@
             </Setter>
         </Style>
 
-        <!-- thin separator matching the dark menu -->
-        <Style TargetType="Separator">
+        <!-- thin separator for the dark chrome menus. Explicit key on purpose:
+             implicit TargetType=Separator styles never reach Separators hosted
+             in a ContextMenu (they keep the theme's full-bleed line), so the
+             menus reference this style in code. Inset aligns with the item
+             text column (border 1 + padding 6 + item margin 2 + padding 12). -->
+        <Style x:Key="MenuSeparatorStyle" TargetType="Separator">
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Separator">
-                        <Rectangle Height="1" Fill="#2E3440" Margin="10,5"/>
+                        <Rectangle Height="1" Fill="#2E3440" Margin="14,7"/>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>

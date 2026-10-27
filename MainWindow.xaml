@@ -59,11 +59,19 @@
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="AboutButton" Style="{StaticResource ChromeButton}" Click="OnAbout">
+                        <Button x:Name="AboutButton" Style="{StaticResource ChromeButton}" Click="OnAbout" Margin="0,0,10,0">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                            Foreground="#9AA3B4" VerticalAlignment="Center"/>
                                 <TextBlock Text="{x:Static gm:Strings.BtnAbout}" Margin="7,0,0,0"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="PowerButton" Style="{StaticResource ChromeButton}" Click="OnPower">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE7E8;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static gm:Strings.BtnPower}" Margin="7,0,0,0"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -228,28 +236,28 @@
                         <!-- four arrow keycaps: up / left / down / right -->
                         <Canvas Width="31" Height="20" VerticalAlignment="Center">
                             <Border Canvas.Left="11" Canvas.Top="0" Width="9" Height="9"
-                                    CornerRadius="2" BorderThickness="1"
+                                     CornerRadius="2" BorderThickness="1"
                                     BorderBrush="#7A86A0" Background="#1E242F">
                                 <Path Data="M1.9,4.6 L3.5,2.4 L5.1,4.6" Stroke="#9AA3B4"
                                       StrokeThickness="1.1" StrokeStartLineCap="Round"
                                       StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                             </Border>
                             <Border Canvas.Left="0" Canvas.Top="11" Width="9" Height="9"
-                                    CornerRadius="2" BorderThickness="1"
+                                     CornerRadius="2" BorderThickness="1"
                                     BorderBrush="#7A86A0" Background="#1E242F">
                                 <Path Data="M4.6,1.9 L2.4,3.5 L4.6,5.1" Stroke="#9AA3B4"
                                       StrokeThickness="1.1" StrokeStartLineCap="Round"
                                       StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                             </Border>
                             <Border Canvas.Left="11" Canvas.Top="11" Width="9" Height="9"
-                                    CornerRadius="2" BorderThickness="1"
+                                     CornerRadius="2" BorderThickness="1"
                                     BorderBrush="#7A86A0" Background="#1E242F">
                                 <Path Data="M1.9,2.4 L3.5,4.6 L5.1,2.4" Stroke="#9AA3B4"
                                       StrokeThickness="1.1" StrokeStartLineCap="Round"
                                       StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                             </Border>
                             <Border Canvas.Left="22" Canvas.Top="11" Width="9" Height="9"
-                                    CornerRadius="2" BorderThickness="1"
+                                     CornerRadius="2" BorderThickness="1"
                                     BorderBrush="#7A86A0" Background="#1E242F">
                                 <Path Data="M2.4,1.9 L4.6,3.5 L2.4,5.1" Stroke="#9AA3B4"
                                       StrokeThickness="1.1" StrokeStartLineCap="Round"
@@ -262,14 +270,12 @@
                         <Rectangle Width="1" Height="12" Fill="#2C3344" Margin="13,1"
                                    VerticalAlignment="Center"/>
 
-                        <!-- Enter keycap: wide, like the real key. The return glyph
-                             is drawn symmetric about the keycap's centerline
-                             (bar + chevron share y = 6.5, the exact middle) so
-                             it reads straight instead of sagging to one side -->
-                        <Border Width="23" Height="13" CornerRadius="3" BorderThickness="1"
+                        <!-- Enter keycap: wide, like the real key, taller than
+                             the arrow keycaps so it reads as the primary action -->
+                        <Border Width="26" Height="16" CornerRadius="3" BorderThickness="1"
                                 BorderBrush="#7D93FF" Background="#242C48"
                                 VerticalAlignment="Center">
-                            <Path Data="M17.2,2.9 L17.2,6.5 L5.8,6.5 M8.7,4.1 L5.8,6.5 L8.7,8.9"
+                            <Path Data="M19.2,3.9 L19.2,8 L6.8,8 M9.9,5.4 L6.8,8 L9.9,10.6"
                                   Stroke="#BAC6FF" StrokeThickness="1.4" StrokeStartLineCap="Round"
                                   StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                         </Border>

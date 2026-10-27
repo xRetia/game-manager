@@ -411,7 +411,7 @@ public partial class MainWindow : Window
             }
             else if (dx != 0)
             {
-                _chromeIndex = ((_chromeIndex + dx) % 4 + 4) % 4;
+                _chromeIndex = ((_chromeIndex + dx) % 5 + 5) % 5;
                 UpdateChromeFocus(animate: true);
             }
             return; // already at the top edge: up is a no-op
@@ -456,12 +456,12 @@ public partial class MainWindow : Window
 
     // ---------------- chrome (header buttons) navigation ----------------
 
-    // -1 = the tile grid has the cursor; 0..3 = the header buttons
-    // (refresh / fullscreen / advanced / about)
+    // -1 = the tile grid has the cursor; 0..4 = the header buttons
+    // (refresh / fullscreen / advanced / about / power)
     private int _chromeIndex = -1;
 
     private FrameworkElement[] ChromeButtons =>
-        new[] { RefreshButton, FullScreenButton, AdvancedButton, AboutButton };
+        new[] { RefreshButton, FullScreenButton, AdvancedButton, AboutButton, PowerButton };
 
     private void EnterChrome()
     {
@@ -538,6 +538,10 @@ public partial class MainWindow : Window
             case 3:
                 OnAbout(null!, null!);
                 ExitChrome();
+                break;
+            case 4:
+                OnPower(null!, null!); // opens the modal power panel
+                if (IsLoaded) ExitChrome(); // disconnect already closed the window
                 break;
         }
     }
@@ -846,7 +850,7 @@ public partial class MainWindow : Window
     /// MessageBoxes and other apps still block pad input.</summary>
     private bool IsOwnProcess(IntPtr hwnd)
     {
-        if ((_openMenu == null && _aboutWindow == null) || hwnd == IntPtr.Zero) return false;
+        if ((_openMenu == null && _aboutWindow == null && _powerDialog == null && _confirmDialog == null) || hwnd == IntPtr.Zero) return false;
         try
         {
             GetWindowThreadProcessId(hwnd, out uint pid);
@@ -904,6 +908,50 @@ public partial class MainWindow : Window
         {
             _padDirActive = false;
             _padRepeatCount = 0;
+        }
+
+        // confirmation dialog (shut down / restart): left/right moves the
+        // button focus, A presses the focused button, B cancels. It owns the
+        // pad completely while open - the panel/tiles never see input.
+        if (_confirmDialog is { } cdlg)
+        {
+            if (dx != 0 || dy != 0 || confirm || back) cdlg.MarkPadInput(pad: true);
+            if (moveNow && dx != 0) cdlg.SwitchFocus(dx);
+            if (back && !_padBackPrev)
+            {
+                cdlg.Cancel();
+            }
+            else if (confirm && !_padConfirmPrev)
+            {
+                cdlg.PressFocused();
+            }
+            _padConfirmPrev = confirm;
+            _padBackPrev = back;
+            return;
+        }
+
+        // power dialog: left/right moves the button focus (the action row
+        // wraps), A presses the focused button, B cancels. It owns the pad
+        // completely while open - the menu/tiles never see input.
+        if (_powerDialog is { } pdlg)
+        {
+            // badge follows the live input device - but ONLY on real pad input.
+            // Poll() returns true for a connected-but-idle pad too (all axes
+            // zeroed), and an unguarded call here would force the badge to B
+            // every 30ms even while the user is on the keyboard/mouse.
+            if (dx != 0 || dy != 0 || confirm || back) pdlg.MarkPadInput(pad: true);
+            if (moveNow && dx != 0) pdlg.SwitchFocus(dx);
+            if (back && !_padBackPrev)
+            {
+                pdlg.Cancel();
+            }
+            else if (confirm && !_padConfirmPrev)
+            {
+                pdlg.PressFocused();
+            }
+            _padConfirmPrev = confirm;
+            _padBackPrev = back;
+            return;
         }
 
         // About dialog: B closes it; everything else waits for the dialog
@@ -1067,11 +1115,58 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")]
     private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO info);
 
-    // ---------------- Advanced menu (gamepad-navigable) ----------------
+    // ---------------- Advanced menu & power panel (gamepad-navigable) ----------------
 
     private ContextMenu? _openMenu;
     private List<MenuItem> _menuItems = new();
     private int _menuIndex;
+
+    /// <summary>Opens a chrome dropdown below its header button and hands it to
+    /// the shared gamepad navigation (_openMenu/_menuItems). Only one chrome
+    /// menu is open at a time: an already-open menu is closed first.</summary>
+    private void OpenChromeMenu(ContextMenu menu, FrameworkElement target)
+    {
+        CloseChromeMenu();
+
+        // Standard WPF popup positioning: below the button.
+        menu.PlacementTarget = target;
+        menu.Placement = PlacementMode.Bottom;
+        menu.VerticalOffset = 8;
+
+        // While the menu is open it owns the gamepad: the popup HWND is the
+        // foreground window (same process - see IsOwnProcess), and pad input
+        // drives menu navigation instead of the tile grid.
+        _openMenu = menu;
+        _menuItems = menu.Items.OfType<MenuItem>().ToList();
+        _menuIndex = 0;
+        menu.Closed += (_, _) =>
+        {
+            if (!ReferenceEquals(_openMenu, menu)) return; // already superseded/cleaned up
+            _openMenu = null;
+            _menuItems = new();
+            ResetPadState(); // a held direction/A must not leak back into the UI
+        };
+        menu.IsOpen = true;
+        if (_menuItems.Count > 0 && _menuItems[0].IsEnabled)
+        {
+            _menuItems[0].Focus();
+        }
+        else
+        {
+            // first item is a read-only status line: start on the first action
+            _menuIndex = _menuItems.FindIndex(m => m.IsEnabled);
+            if (_menuIndex >= 0) _menuItems[_menuIndex].Focus();
+        }
+    }
+
+    private void CloseChromeMenu()
+    {
+        if (_openMenu is not { } open) return;
+        _openMenu = null;
+        _menuItems = new();
+        open.IsOpen = false;
+        ResetPadState();
+    }
 
     private void OnAdvanced(object sender, RoutedEventArgs e)
     {
@@ -1093,41 +1188,23 @@ public partial class MainWindow : Window
             () => Launcher.RunElevated("--register-all"));
         Item(Strings.MenuUnregisterAll, true,
             () => Launcher.RunElevated("--unregister-all"));
-        menu.Items.Add(new Separator());
+        // explicit style: ContextMenu-hosted Separators ignore implicit styles
+        menu.Items.Add(new Separator { Style = (Style)FindResource("MenuSeparatorStyle") });
         Item(IsServiceInstalled() ? Strings.MenuServiceInstalled : Strings.MenuServiceNotInstalled, false, null!);
         Item(Strings.MenuInstallService, !IsServiceInstalled(),
             () => Launcher.RunElevated("--install-service"));
         Item(Strings.MenuRemoveService, IsServiceInstalled(),
             () => Launcher.RunElevated("--uninstall-service"));
 
-        // Standard WPF popup positioning: below the button.
-        menu.PlacementTarget = AdvancedButton;
-        menu.Placement = PlacementMode.Bottom;
-        menu.VerticalOffset = 8;
+        OpenChromeMenu(menu, AdvancedButton);
+    }
 
-        // While the menu is open it owns the gamepad: the popup HWND is the
-        // foreground window (same process - see IsOwnProcess), and pad input
-        // drives menu navigation instead of the tile grid.
-        _openMenu = menu;
-        _menuItems = menu.Items.OfType<MenuItem>().ToList();
-        _menuIndex = 0;
-        menu.Closed += (_, _) =>
-        {
-            _openMenu = null;
-            _menuItems = new();
-            ResetPadState(); // a held direction/A must not leak back into the UI
-        };
-        menu.IsOpen = true;
-        if (_menuItems.Count > 0 && _menuItems[0].IsEnabled)
-        {
-            _menuItems[0].Focus();
-        }
-        else
-        {
-            // first item is the read-only status line: start on the first action
-            _menuIndex = _menuItems.FindIndex(m => m.IsEnabled);
-            if (_menuIndex >= 0) _menuItems[_menuIndex].Focus();
-        }
+    private void OnPower(object sender, RoutedEventArgs e)
+    {
+        // The header power button opens the action panel directly - no dropdown
+        // step in between. All four actions share this one confirmation surface;
+        // the initial focus sits on the first (mildest) action, console-style.
+        ShowPowerDialog(PowerAction.Disconnect);
     }
 
     private static bool IsServiceInstalled()
@@ -1163,6 +1240,87 @@ public partial class MainWindow : Window
     }
 
     private AboutWindow? _aboutWindow;
+
+    // ---------------- power actions ----------------
+
+    private PowerDialog? _powerDialog;
+    private ConfirmDialog? _confirmDialog;
+
+    /// <summary>断开：先切断本会话串流客户端的 TCP 连接（趁自己还活着），
+    /// 再关闭管理器。不碰 sunshine.exe —— RTSP 连接一断，Apollo 会自行结束
+    /// 串流会话并回到空闲。无管理员权限时切断退化为空操作，依然关闭管理器。</summary>
+    private void OnExitStream()
+    {
+        int killed = PowerActions.DisconnectStreamClients();
+        if (killed == 0)
+        {
+            ServiceHost.Log("exit-stream: nothing cut - closing the launcher only");
+        }
+        Close(); // App shutdown follows (ShutdownMode=OnMainWindowClose)
+    }
+
+    /// <summary>Power panel: one dialog with all four actions (disconnect /
+    /// sign out / shut down / restart). Opened directly by the header power
+    /// button (mouse, keyboard Enter, gamepad A) - there is no dropdown step.
+    /// Focus starts on the first action (console power-menu convention) and
+    /// left/right moves it; cancelled with Esc / gamepad B.</summary>
+    private void ShowPowerDialog(PowerAction initial)
+    {
+        CloseChromeMenu(); // a stray Advanced dropdown must not linger behind the modal
+
+        var dlg = new PowerDialog(initial, _hintPadMode) { Owner = this };
+        _powerDialog = dlg;
+        PowerAction? chosen;
+        try
+        {
+            chosen = dlg.ShowDialog() == true ? dlg.Result : null;
+        }
+        finally
+        {
+            _powerDialog = null;
+        }
+
+        switch (chosen)
+        {
+            case PowerAction.Disconnect:
+                OnExitStream();
+                break;
+            case PowerAction.LogOff:
+                PowerActions.LogOff();
+                break;
+            case PowerAction.Shutdown:
+                if (ConfirmDestructive(shutdown: true)) PowerActions.Shutdown();
+                break;
+            case PowerAction.Restart:
+                if (ConfirmDestructive(shutdown: false)) PowerActions.Restart();
+                break;
+        }
+    }
+
+    /// <summary>Second-stage confirmation for the forced shut down / restart:
+    /// the power panel picks the action, this dark card makes the irreversible
+    /// step explicit (original requirement: these two need a confirmation
+    /// dialog). Focus starts on Cancel; confirmed by click, Enter or pad A on
+    /// the confirm button, cancelled by Esc / X / pad B.</summary>
+    private bool ConfirmDestructive(bool shutdown)
+    {
+        var dlg = new ConfirmDialog(
+            shutdown ? Strings.ConfirmShutdownTitle : Strings.ConfirmRestartTitle,
+            shutdown ? Strings.ConfirmShutdownBody : Strings.ConfirmRestartBody,
+            shutdown ? Strings.PowerShutdown : Strings.PowerRestart,
+            _hintPadMode)
+        { Owner = this };
+
+        _confirmDialog = dlg;
+        try
+        {
+            return dlg.ShowDialog() == true && dlg.Confirmed;
+        }
+        finally
+        {
+            _confirmDialog = null;
+        }
+    }
 
     // ---------------- render diagnostics ----------------
 
