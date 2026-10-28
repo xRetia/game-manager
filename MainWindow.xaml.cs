@@ -15,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using System.Windows.Threading;
+using Microsoft.Win32;
 
 namespace GameManager;
 
@@ -70,6 +71,13 @@ public partial class MainWindow : Window
             // Spawned by the service: no foreground rights, force the window to the front.
             Loaded += (_, _) => ForceToFront();
         }
+        else
+        {
+            // Direct launch: take the foreground once the window is up - starting
+            // from a script or another app can otherwise leave us underneath.
+            Loaded += (_, _) => Dispatcher.BeginInvoke(
+                () => TakeForeground(), DispatcherPriority.ApplicationIdle);
+        }
 
         Loaded += (_, _) =>
         {
@@ -85,6 +93,7 @@ public partial class MainWindow : Window
 
         Closed += (_, _) =>
         {
+            SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
             _padPollTimer?.Dispose();
             _padPollTimer = null;
             _launchHideTimer?.Stop();
@@ -98,6 +107,8 @@ public partial class MainWindow : Window
         // the chrome focus frame needs the same treatment on header relayouts
         // (fullscreen toggles, window resizes)
         SizeChanged += (_, _) => UpdateChromeFocus(animate: false);
+        // resolution / DPI changes relayout the grid and re-snap the overlays
+        SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
 
         // console-style input hint fades in shortly after the window shows up
         Loaded += (_, _) => InputHint.BeginAnimation(OpacityProperty,
@@ -263,6 +274,15 @@ public partial class MainWindow : Window
 
         RecalcMetrics();
 
+        // the launcher starts with the first tile selected: the cursor is live
+        // from the first frame and Enter launches something immediately.
+        // Deferred to after the layout pass - SelectGame right away would run
+        // before the item containers exist and drop the cursor frame.
+        if (Games.Count > 0)
+        {
+            Dispatcher.BeginInvoke(() => SelectGame(0, scroll: false), DispatcherPriority.Loaded);
+        }
+
         // a reload swaps the whole grid in; a short fade keeps that from
         // reading as a hard flash, especially with a large library
         TilesControl.BeginAnimation(OpacityProperty,
@@ -325,6 +345,19 @@ public partial class MainWindow : Window
     private void OnGameAreaSizeChanged(object sender, SizeChangedEventArgs e)
     {
         RecalcMetrics();
+    }
+
+    /// <summary>Resolution / DPI switch: the window resize handlers cover most of the
+    /// relayout, but the display change can land before (or without) a WPF resize pass,
+    /// so re-run the grid math and re-snap the overlays explicitly once it settles.</summary>
+    private void OnDisplaySettingsChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            RecalcMetrics();
+            MoveCursorTo(_selectedIndex, animate: false);
+            UpdateChromeFocus(animate: false);
+        }, DispatcherPriority.Render);
     }
 
     // ---------------- selection / navigation ----------------
