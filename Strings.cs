@@ -22,7 +22,6 @@ public static class Strings
 
     // ---- power menu & power dialog ----
 
-    public static string PowerExitStream => Zh ? "断开" : "Disconnect";
     public static string PowerLogOff => Zh ? "注销用户" : "Sign Out";
     public static string PowerShutdown => Zh ? "关机" : "Shut Down";
     public static string PowerRestart => Zh ? "重启" : "Restart";

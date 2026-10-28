@@ -61,20 +61,23 @@ The Advanced menu in the UI covers it, all elevated:
 ## Power panel
 
 The power button in the header opens the power panel directly - no dropdown
-step in between. One row with all four actions, circular line icons in soft
-hues, so a mis-tap can still be corrected to any other action:
+step in between. One row with all actions, circular line icons in soft hues,
+a focus ring that glides between the buttons, so a mis-tap can still be
+corrected to another action:
 
-- **Disconnect** - cuts the streaming client's TCP connections to this
-  session's Sunshine/Apollo host (ports 47984/47989/48010, admin rights
-  required - degrades to closing the UI only without them) and then closes
-  Game Manager. sunshine.exe itself is never touched: Apollo ends the stream
-  session on its own and the next client can connect right away.
 - **Sign out** - logs the current user off.
-- **Shut down / Restart** - forced (`shutdown /f /t 0`).
+- **Shut down / Restart** - forced (`shutdown /f /t 0`), each behind a
+  second-stage confirmation dialog (dark card, focus starts on Cancel).
 
-The panel works with mouse, touch, keyboard (Left/Right to move, Enter to
-confirm, Esc to cancel) and gamepad (d-pad/stick, A, B); the focus starts on
-the first action. The bottom-right hint shows circled Esc/B badges.
+(A former "disconnect stream" action was removed: Moonlight connects to this
+host over IPv6, and Windows' SetTcpEntry is IPv4-only - there is no user-mode
+API to force-drop an IPv6 TCB, so the TCP-cut approach never reached the
+stream. Exit the stream from the Moonlight client instead.)
+
+Both dialogs work with mouse, touch, keyboard (Left/Right to move, Enter to
+confirm, Esc to cancel) and gamepad (d-pad/stick, A, B). The key/button hint
+badges auto-detect the live input device (Enter+Esc vs A+B); the power panel's
+top-right X closes it.
 
 ## Remote-session GPU acceleration
 

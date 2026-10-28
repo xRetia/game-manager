@@ -108,17 +108,21 @@
             <TextBlock Text="{x:Static gm:Strings.PowerNote}" Foreground="#98A0B0" FontSize="12.5"
                        Margin="0,14,0,0"/>
 
-            <!-- action row: disconnect / sign out / shut down / restart.
+            <!-- action row: sign out / shut down / restart.
                  Android power-menu anatomy: tinted circle + Segoe MDL2 glyph on
                  top, label below, all buttons the same size. Left/right steps
                  the focus (keyboard arrows, pad dpad/stick), Enter or pad A
                  presses, Esc or pad B cancels. The focus ring slides between
                  the buttons (FocusRing, animated from code) instead of just
-                 blinking on the new one. -->
+                 blinking on the new one.
+                 No "disconnect" action: Moonlight clients connect over IPv6
+                 here, and Windows has no user-mode API to force-drop an IPv6
+                 TCB (SetTcpEntry is IPv4-only), so the TCP-cut approach could
+                 not reach the stream. -->
             <Grid HorizontalAlignment="Center" Margin="0,24,0,6">
 
             <!-- sliding focus ring: one shared element that glides between
-                 the four circles; IsHitTestVisible=False so it never blocks
+                 the three circles; IsHitTestVisible=False so it never blocks
                  clicks. The horizontal position is driven by a
                  TranslateTransform (X is directly animatable, Margin is not). -->
             <Border x:Name="FocusRing" Width="60" Height="60" CornerRadius="30"
@@ -135,15 +139,9 @@
 
                 <StackPanel Orientation="Horizontal">
 
-                    <Button x:Name="DisconnectButton" Style="{StaticResource PwrButton}"
-                            Background="#2E3D55" Tag="{x:Static gm:Strings.PowerExitStream}"
-                            GotKeyboardFocus="OnButtonFocusChanged" Click="OnDisconnect">
-                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="24"/>
-                    </Button>
-
                     <Button x:Name="LogOffButton" Style="{StaticResource PwrButton}"
                             Background="#2C3F33" Tag="{x:Static gm:Strings.PowerLogOff}"
-                            GotKeyboardFocus="OnButtonFocusChanged" Click="OnLogOff" Margin="24,0,0,0">
+                            GotKeyboardFocus="OnButtonFocusChanged" Click="OnLogOff">
                         <TextBlock Text="&#xF3B1;" FontFamily="Segoe MDL2 Assets" FontSize="22"/>
                     </Button>
 

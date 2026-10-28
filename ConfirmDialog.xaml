@@ -33,14 +33,6 @@
                                 <Setter TargetName="bd" Property="Background" Value="#4A5265"/>
                                 <Setter TargetName="bd" Property="BorderBrush" Value="#4A5265"/>
                             </Trigger>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#A9BCFF"/>
-                                <Setter TargetName="bd" Property="Effect">
-                                    <Setter.Value>
-                                        <DropShadowEffect ShadowDepth="0" BlurRadius="14" Color="#6082FF" Opacity="0.75"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -65,14 +57,6 @@
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="bd" Property="Background" Value="#B56A2A"/>
                                 <Setter TargetName="bd" Property="BorderBrush" Value="#B56A2A"/>
-                            </Trigger>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#FFFFFF"/>
-                                <Setter TargetName="bd" Property="Effect">
-                                    <Setter.Value>
-                                        <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#FF8A3D" Opacity="0.8"/>
-                                    </Setter.Value>
-                                </Setter>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -110,16 +94,36 @@
             <TextBlock x:Name="BodyText" Text="" Foreground="#C5CBD8" FontSize="13"
                        LineHeight="21" Margin="0,14,0,0" TextWrapping="Wrap"/>
 
-            <!-- action row: cancel (safe default) + destructive confirm -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
-                <Button x:Name="CancelButton" Style="{StaticResource CfmButton}"
-                        Content="{x:Static gm:Strings.PowerCancel}"
-                        GotKeyboardFocus="OnButtonFocusChanged" Click="OnCancel"/>
-                <Button x:Name="ConfirmButton" Style="{StaticResource CfmButtonDanger}"
-                        GotKeyboardFocus="OnButtonFocusChanged" Click="OnConfirm" Margin="12,0,0,0">
-                    <TextBlock x:Name="ConfirmButtonText" Text=""/>
-                </Button>
-            </StackPanel>
+            <!-- action row: cancel (safe default) + destructive confirm.
+                 The focus indicator is a shared ring (FocusRing) that GLIDES
+                 between the two buttons like the power panel's circle ring,
+                 instead of blinking on the new button. -->
+            <Grid HorizontalAlignment="Right" Margin="0,22,0,0">
+
+                <!-- sliding focus ring: driven by a TranslateTransform
+                     (X animatable, Margin is not); never blocks clicks -->
+                <Border x:Name="FocusRing" Width="126" Height="48" CornerRadius="13"
+                        BorderThickness="1.5" BorderBrush="#A9BCFF" Opacity="0"
+                        HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Margin="-3,-3,0,0" IsHitTestVisible="False">
+                    <Border.RenderTransform>
+                        <TranslateTransform x:Name="RingSlide"/>
+                    </Border.RenderTransform>
+                    <Border.Effect>
+                        <DropShadowEffect ShadowDepth="0" BlurRadius="12" Color="#6082FF" Opacity="0.6"/>
+                    </Border.Effect>
+                </Border>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="CancelButton" Style="{StaticResource CfmButton}"
+                            Content="{x:Static gm:Strings.PowerCancel}"
+                            GotKeyboardFocus="OnButtonFocusChanged" Click="OnCancel"/>
+                    <Button x:Name="ConfirmButton" Style="{StaticResource CfmButtonDanger}"
+                            GotKeyboardFocus="OnButtonFocusChanged" Click="OnConfirm" Margin="12,0,0,0">
+                        <TextBlock x:Name="ConfirmButtonText" Text=""/>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
             <!-- key/button hints, following the live input device -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,2,0">

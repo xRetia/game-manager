@@ -227,6 +227,9 @@ public partial class MainWindow : Window
     {
         Games.Clear();
         _selectedIndex = -1;
+        // the cursor is an overlay, not part of the item list: hide it with the
+        // selection, or a reload leaves it framing an unselected tile
+        CursorFrame.Visibility = Visibility.Collapsed;
         AcrylicImage.Source = null;
         EmptyHint.Visibility = Visibility.Collapsed;
 
@@ -315,6 +318,12 @@ public partial class MainWindow : Window
     private void OnTileClick(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is not GameInfo game) return;
+
+        // mouse/touch takes the input back from the header row: without this
+        // _chromeIndex stays >= 0 and the next Enter/A would press a header
+        // button (e.g. the power panel's sign-out) instead of the picked tile
+        if (_chromeIndex >= 0) ExitChrome();
+
         if (SelectedGame == game)
         {
             LaunchGame(game);
@@ -541,7 +550,7 @@ public partial class MainWindow : Window
                 break;
             case 4:
                 OnPower(null!, null!); // opens the modal power panel
-                if (IsLoaded) ExitChrome(); // disconnect already closed the window
+                if (IsLoaded) ExitChrome(); // a sign-out may already be closing the window
                 break;
         }
     }
@@ -706,7 +715,24 @@ public partial class MainWindow : Window
     private void StartMarquee(TextBlock text, TranslateTransform scroll)
     {
         if (text.Parent is not FrameworkElement clip) return;
-        double overflow = text.ActualWidth - clip.ActualWidth;
+        if (clip.ActualWidth <= 0) return;
+
+        // The laid-out TextBlock is trimmed to the clip width, so its ActualWidth
+        // says nothing about the part that got cut off. Measure a detached copy
+        // with no width constraint to get the full text width instead.
+        var probe = new TextBlock
+        {
+            Text = text.Text,
+            FontFamily = text.FontFamily,
+            FontSize = text.FontSize,
+            FontStyle = text.FontStyle,
+            FontWeight = text.FontWeight,
+            FontStretch = text.FontStretch,
+            Padding = text.Padding
+        };
+        probe.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        double overflow = probe.DesiredSize.Width - clip.ActualWidth;
         if (overflow <= 4) return; // fits: nothing to scroll
 
         text.TextAlignment = TextAlignment.Left; // anchor left so the scroll reveals the tail
@@ -736,6 +762,14 @@ public partial class MainWindow : Window
     /// the transform mid-animation, so they chain into one continuous glide. Snaps otherwise.</summary>
     private void MoveCursorTo(int index, bool animate)
     {
+        // while the header owns the focus, a relayout (resize, icon size change)
+        // must not bring the tile frame back on top of the chrome focus
+        if (_chromeIndex >= 0)
+        {
+            CursorFrame.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         Border? card = null;
         if (index >= 0 && index < Games.Count &&
             TilesControl.ItemContainerGenerator.ContainerFromIndex(index) is FrameworkElement container &&
@@ -997,15 +1031,22 @@ public partial class MainWindow : Window
 
         if (moveNow) Navigate(dx, dy);
 
-        // B is the console "back" button: leaves the header button row
-        if (back && !_padBackPrev && _chromeIndex >= 0) ExitChrome();
+        // Record the press edges BEFORE acting: opening a modal dialog enters a
+        // nested dispatcher loop, so this handler can run again while the same
+        // A/B is still held. If the previous state were written afterwards, that
+        // re-entrant poll would see a "fresh" press and act on the dialog.
+        bool backPressed = back && !_padBackPrev;
+        bool confirmPressed = confirm && !_padConfirmPrev;
+        _padConfirmPrev = confirm;
+        _padBackPrev = back;
 
-        if (confirm && !_padConfirmPrev)
+        // B is the console "back" button: leaves the header button row
+        if (backPressed && _chromeIndex >= 0) ExitChrome();
+
+        if (confirmPressed)
         {
             ConfirmSelection();
         }
-        _padConfirmPrev = confirm;
-        _padBackPrev = back;
     }
 
     // ---------------- chrome ----------------
@@ -1026,18 +1067,24 @@ public partial class MainWindow : Window
         {
             _savedState = WindowState;
             _savedResize = ResizeMode;
+            // arm the WM_GETMINMAXINFO hook BEFORE maximizing: the flag is what
+            // makes the hook answer that message, and the maximize asks for it
+            // synchronously; set afterwards the first layout uses the work-area
+            // rect instead of the full monitor
+            _fullScreen = true;
             ResizeMode = ResizeMode.NoResize;
             WindowStyle = WindowStyle.None;
             WindowState = WindowState.Normal; // re-enter maximize so WM_GETMINMAXINFO applies
             WindowState = WindowState.Maximized;
-            _fullScreen = true;
         }
         else
         {
+            // disarm first: restoring a Maximized window must use the normal
+            // (work-area) rect, not the monitor rect from the fullscreen hook
+            _fullScreen = false;
             WindowState = _savedState;
             WindowStyle = WindowStyle.SingleBorderWindow;
             ResizeMode = _savedResize;
-            _fullScreen = false;
         }
     }
 
@@ -1202,9 +1249,9 @@ public partial class MainWindow : Window
     private void OnPower(object sender, RoutedEventArgs e)
     {
         // The header power button opens the action panel directly - no dropdown
-        // step in between. All four actions share this one confirmation surface;
-        // the initial focus sits on the first (mildest) action, console-style.
-        ShowPowerDialog(PowerAction.Disconnect);
+        // step in between. All actions share this one confirmation surface; the
+        // initial focus sits on the first action, console-style.
+        ShowPowerDialog(PowerAction.LogOff);
     }
 
     private static bool IsServiceInstalled()
@@ -1246,21 +1293,8 @@ public partial class MainWindow : Window
     private PowerDialog? _powerDialog;
     private ConfirmDialog? _confirmDialog;
 
-    /// <summary>断开：先切断本会话串流客户端的 TCP 连接（趁自己还活着），
-    /// 再关闭管理器。不碰 sunshine.exe —— RTSP 连接一断，Apollo 会自行结束
-    /// 串流会话并回到空闲。无管理员权限时切断退化为空操作，依然关闭管理器。</summary>
-    private void OnExitStream()
-    {
-        int killed = PowerActions.DisconnectStreamClients();
-        if (killed == 0)
-        {
-            ServiceHost.Log("exit-stream: nothing cut - closing the launcher only");
-        }
-        Close(); // App shutdown follows (ShutdownMode=OnMainWindowClose)
-    }
-
-    /// <summary>Power panel: one dialog with all four actions (disconnect /
-    /// sign out / shut down / restart). Opened directly by the header power
+    /// <summary>Power panel: one dialog with all three actions (sign out /
+    /// shut down / restart). Opened directly by the header power
     /// button (mouse, keyboard Enter, gamepad A) - there is no dropdown step.
     /// Focus starts on the first action (console power-menu convention) and
     /// left/right moves it; cancelled with Esc / gamepad B.</summary>
@@ -1282,9 +1316,6 @@ public partial class MainWindow : Window
 
         switch (chosen)
         {
-            case PowerAction.Disconnect:
-                OnExitStream();
-                break;
             case PowerAction.LogOff:
                 PowerActions.LogOff();
                 break;

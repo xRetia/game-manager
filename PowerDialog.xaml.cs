@@ -1,6 +1,8 @@
-// Power action panel (one dialog for every power entry point). Four buttons
-// in one horizontal row - disconnect / sign out / shut down / restart - so a
-// mis-tap can be corrected to any other action before anything happens.
+// Power action panel (one dialog for every power entry point). Three buttons
+// in one horizontal row - sign out / shut down / restart - so a mis-tap can
+// be corrected to another action before anything happens. (A former
+// "disconnect" action was removed: Moonlight connects over IPv6 here and
+// there is no user-mode API to force-drop an IPv6 TCB.)
 //
 // Input surface (all four device classes):
 //   - Mouse / touch: the buttons are ordinary WPF buttons (touch promotes to
@@ -35,7 +37,7 @@ public partial class PowerDialog : Window
     // 96-wide button slots + 24px gaps; the ring centers on each circle
     private const double SlotWidth = 96 + 24;
 
-    private Button[] Buttons => new[] { DisconnectButton, LogOffButton, ShutdownButton, RestartButton };
+    private Button[] Buttons => new[] { LogOffButton, ShutdownButton, RestartButton };
     private int _focusIndex;
     private bool _padMode;
 
@@ -52,10 +54,9 @@ public partial class PowerDialog : Window
 
         _focusIndex = initial switch
         {
-            PowerAction.Disconnect => 0,
-            PowerAction.LogOff => 1,
-            PowerAction.Shutdown => 2,
-            PowerAction.Restart => 3,
+            PowerAction.LogOff => 0,
+            PowerAction.Shutdown => 1,
+            PowerAction.Restart => 2,
             _ => 0
         };
 
@@ -103,7 +104,8 @@ public partial class PowerDialog : Window
     /// wraps around at both ends; the ring glides to the new button.</summary>
     internal void SwitchFocus(int dx)
     {
-        _focusIndex = ((_focusIndex + dx) % 4 + 4) % 4;
+        int n = Buttons.Length;
+        _focusIndex = ((_focusIndex + dx) % n + n) % n;
         Buttons[_focusIndex].Focus();
         PositionRing(_focusIndex, animate: true);
     }
@@ -156,8 +158,6 @@ public partial class PowerDialog : Window
             PositionRing(i, animate: true);
         }
     }
-
-    private void OnDisconnect(object sender, RoutedEventArgs e) => CloseWith(PowerAction.Disconnect);
 
     private void OnLogOff(object sender, RoutedEventArgs e) => CloseWith(PowerAction.LogOff);
 
