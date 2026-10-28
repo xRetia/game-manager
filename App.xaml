@@ -6,9 +6,9 @@
 
         <!-- rounded header button with animated hover/press -->
         <Style x:Key="ChromeButton" TargetType="Button">
-            <Setter Property="Foreground" Value="#EBEEF3"/>
+            <Setter Property="Foreground" Value="#E8EBF2"/>
             <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Padding" Value="13,8"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
             <Setter Property="RenderTransform">
@@ -19,7 +19,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" CornerRadius="10" Background="#2D3340"
+                        <Border x:Name="bd" CornerRadius="10" Background="#262C38"
+                                BorderBrush="#00000000" BorderThickness="1"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
@@ -30,7 +31,14 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="bd"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="#404758" Duration="0:0:0.12"/>
+                                                            To="#343C4E" Duration="0:0:0.14">
+                                                <ColorAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </ColorAnimation.EasingFunction>
+                                            </ColorAnimation>
+                                            <ColorAnimation Storyboard.TargetName="bd"
+                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                            To="#3E4863" Duration="0:0:0.14"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.EnterActions>
@@ -39,7 +47,10 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="bd"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="#2D3340" Duration="0:0:0.18"/>
+                                                            To="#262C38" Duration="0:0:0.2"/>
+                                            <ColorAnimation Storyboard.TargetName="bd"
+                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                            To="#00000000" Duration="0:0:0.2"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
@@ -59,9 +70,17 @@
                                     <BeginStoryboard>
                                         <Storyboard>
                                             <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
-                                                             To="1" Duration="0:0:0.12"/>
+                                                             To="1" Duration="0:0:0.14">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <BackEase EasingMode="EaseOut" Amplitude="0.3"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
                                             <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
-                                                             To="1" Duration="0:0:0.12"/>
+                                                             To="1" Duration="0:0:0.14">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <BackEase EasingMode="EaseOut" Amplitude="0.3"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
@@ -72,7 +91,7 @@
             </Setter>
         </Style>
 
-        <!-- game tile: hover lift with back-ease, selection glow -->
+        <!-- game tile: hover lift with back-ease, animated selection tint -->
         <Style x:Key="TileButton" TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
@@ -84,8 +103,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" CornerRadius="14" Background="#1C2028"
-                                BorderThickness="1.4" BorderBrush="Transparent" Margin="10">
+                        <Border x:Name="bd" CornerRadius="16" Background="#1B1F27"
+                                BorderThickness="1.4" BorderBrush="#00000000" Margin="9">
                             <StackPanel>
                                 <!-- BitmapCache: every tile icon is rasterized once
                                      (shadow included); scrolling just moves cached
@@ -109,9 +128,9 @@
                                      while selected the full name scrolls (marquee) - driven
                                      from code because the required text width is measured
                                      at runtime -->
-                                <Border ClipToBounds="True" Margin="12,0,12,14">
+                                <Border ClipToBounds="True" Margin="12,0,12,15">
                                     <TextBlock x:Name="nameText" Text="{Binding Name}" TextAlignment="Center"
-                                               Foreground="#D4D8E0" FontSize="14.5"
+                                               Foreground="#CED3DC" FontSize="15"
                                                TextWrapping="NoWrap"
                                                TextTrimming="CharacterEllipsis">
                                         <TextBlock.RenderTransform>
@@ -129,15 +148,15 @@
                                     <BeginStoryboard>
                                         <Storyboard>
                                             <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
-                                                             To="1.06" Duration="0:0:0.22">
+                                                             To="1.045" Duration="0:0:0.24">
                                                 <DoubleAnimation.EasingFunction>
-                                                    <BackEase EasingMode="EaseOut" Amplitude="0.35"/>
+                                                    <QuarticEase EasingMode="EaseOut"/>
                                                 </DoubleAnimation.EasingFunction>
                                             </DoubleAnimation>
                                             <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
-                                                             To="1.06" Duration="0:0:0.22">
+                                                             To="1.045" Duration="0:0:0.24">
                                                 <DoubleAnimation.EasingFunction>
-                                                    <BackEase EasingMode="EaseOut" Amplitude="0.35"/>
+                                                    <QuarticEase EasingMode="EaseOut"/>
                                                 </DoubleAnimation.EasingFunction>
                                             </DoubleAnimation>
                                         </Storyboard>
@@ -147,13 +166,13 @@
                                     <BeginStoryboard>
                                         <Storyboard>
                                             <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
-                                                             To="1" Duration="0:0:0.18">
+                                                             To="1" Duration="0:0:0.2">
                                                 <DoubleAnimation.EasingFunction>
                                                     <CubicEase EasingMode="EaseOut"/>
                                                 </DoubleAnimation.EasingFunction>
                                             </DoubleAnimation>
                                             <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
-                                                             To="1" Duration="0:0:0.18">
+                                                             To="1" Duration="0:0:0.2">
                                                 <DoubleAnimation.EasingFunction>
                                                     <CubicEase EasingMode="EaseOut"/>
                                                 </DoubleAnimation.EasingFunction>
@@ -163,10 +182,38 @@
                                 </Trigger.ExitActions>
                             </Trigger>
 
-                            <!-- selected: tinted backdrop; the sliding CursorFrame carries the glow -->
+                            <!-- selected: tint fades in instead of snapping; the
+                                 sliding CursorFrame carries the glow -->
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#333B4A"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#4A5265"/>
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="bd"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="#333B4A" Duration="0:0:0.18">
+                                                <ColorAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </ColorAnimation.EasingFunction>
+                                            </ColorAnimation>
+                                            <ColorAnimation Storyboard.TargetName="bd"
+                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                            To="#4A5265" Duration="0:0:0.18"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="bd"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="#1B1F27" Duration="0:0:0.22"/>
+                                            <ColorAnimation Storyboard.TargetName="bd"
+                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                            To="#00000000" Duration="0:0:0.22"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                                <Setter TargetName="nameText" Property="Foreground" Value="#F2F4F8"/>
                             </DataTrigger>
 
                         </ControlTemplate.Triggers>

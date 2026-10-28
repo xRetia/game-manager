@@ -262,6 +262,22 @@ public partial class MainWindow : Window
         }
 
         RecalcMetrics();
+
+        // a reload swaps the whole grid in; a short fade keeps that from
+        // reading as a hard flash, especially with a large library
+        TilesControl.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
+        if (EmptyHint.Visibility == Visibility.Visible)
+        {
+            EmptyHint.BeginAnimation(OpacityProperty,
+                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320))
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                });
+        }
     }
 
     /// <summary>Adaptive sizing: large screens keep 256px icons, small screens shrink.</summary>
@@ -369,11 +385,11 @@ public partial class MainWindow : Window
 
         if (rect.Top < 0)
         {
-            SmoothScrollTo(Scroller.VerticalOffset + rect.Top - 12);
+            SmoothScrollTo(Scroller.VerticalOffset + rect.Top - 16);
         }
         else if (rect.Bottom > Scroller.ViewportHeight)
         {
-            SmoothScrollTo(Scroller.VerticalOffset + (rect.Bottom - Scroller.ViewportHeight) + 12);
+            SmoothScrollTo(Scroller.VerticalOffset + (rect.Bottom - Scroller.ViewportHeight) + 16);
         }
         // else: fully visible -> do not scroll at all
     }
@@ -402,9 +418,9 @@ public partial class MainWindow : Window
             Scroller.ScrollToVerticalOffset(target);
             return;
         }
-        BeginAnimation(ScrollAnimProperty, new DoubleAnimation(from, target, TimeSpan.FromMilliseconds(180))
+        BeginAnimation(ScrollAnimProperty, new DoubleAnimation(from, target, TimeSpan.FromMilliseconds(220))
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
         });
     }
 
@@ -479,7 +495,23 @@ public partial class MainWindow : Window
         ChromeFocus.Visibility = Visibility.Visible;
         ChromeFocus.BeginAnimation(OpacityProperty,
             new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)));
+        PopIn(ChromeScale, 0.94, 220);
         UpdateChromeFocus(animate: false);
+    }
+
+    /// <summary>Short elastic grow for a focus frame that has just appeared.</summary>
+    private static void PopIn(ScaleTransform scale, double from, double milliseconds)
+    {
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        scale.ScaleX = scale.ScaleY = from;
+
+        var duration = TimeSpan.FromMilliseconds(milliseconds);
+        var ease = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 };
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty,
+            new DoubleAnimation(from, 1, duration) { EasingFunction = ease });
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty,
+            new DoubleAnimation(from, 1, duration) { EasingFunction = ease });
     }
 
     private void ExitChrome()
@@ -509,19 +541,32 @@ public partial class MainWindow : Window
 
         double x = rect.Left - 4;
         double y = rect.Top - 4;
-        ChromeFocus.Width = rect.Width + 8;
-        ChromeFocus.Height = rect.Height + 8;
+        double w = rect.Width + 8;
+        double h = rect.Height + 8;
 
         if (animate)
         {
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            // start the size morph from the rendered size, not the already-set
+            // target, so the frame grows/shrinks while it glides
+            double fromW = ChromeFocus.ActualWidth > 0 ? ChromeFocus.ActualWidth : w;
+            double fromH = ChromeFocus.ActualHeight > 0 ? ChromeFocus.ActualHeight : h;
+            var duration = TimeSpan.FromMilliseconds(160);
+            ChromeFocus.BeginAnimation(WidthProperty,
+                new DoubleAnimation(fromW, w, duration) { EasingFunction = ease });
+            ChromeFocus.BeginAnimation(HeightProperty,
+                new DoubleAnimation(fromH, h, duration) { EasingFunction = ease });
             ChromeTransform.BeginAnimation(TranslateTransform.XProperty,
-                new DoubleAnimation(ChromeTransform.X, x, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease });
+                new DoubleAnimation(ChromeTransform.X, x, duration) { EasingFunction = ease });
             ChromeTransform.BeginAnimation(TranslateTransform.YProperty,
-                new DoubleAnimation(ChromeTransform.Y, y, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease });
+                new DoubleAnimation(ChromeTransform.Y, y, duration) { EasingFunction = ease });
         }
         else
         {
+            ChromeFocus.BeginAnimation(WidthProperty, null);
+            ChromeFocus.BeginAnimation(HeightProperty, null);
+            ChromeFocus.Width = w;
+            ChromeFocus.Height = h;
             ChromeTransform.BeginAnimation(TranslateTransform.XProperty, null);
             ChromeTransform.BeginAnimation(TranslateTransform.YProperty, null);
             ChromeTransform.X = x;
@@ -755,7 +800,7 @@ public partial class MainWindow : Window
     // ---------------- sliding selection cursor ----------------
 
     private const double CursorPad = 7; // the frame floats this far outside the tile edge
-    private static readonly TimeSpan CursorSlideTime = TimeSpan.FromMilliseconds(170);
+    private static readonly TimeSpan CursorSlideTime = TimeSpan.FromMilliseconds(180);
 
     /// <summary>Places the selection frame over the tile at <paramref name="index"/>. With
     /// animate it glides there from its current position, console-style; quick repeats read
@@ -800,7 +845,7 @@ public partial class MainWindow : Window
         bool wasHidden = CursorFrame.Visibility != Visibility.Visible;
         if (animate && !wasHidden)
         {
-            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            var ease = new QuarticEase { EasingMode = EasingMode.EaseOut };
             CursorTransform.BeginAnimation(TranslateTransform.XProperty,
                 new DoubleAnimation(CursorTransform.X, x, CursorSlideTime) { EasingFunction = ease });
             CursorTransform.BeginAnimation(TranslateTransform.YProperty,
@@ -819,7 +864,8 @@ public partial class MainWindow : Window
         {
             CursorFrame.Visibility = Visibility.Visible;
             CursorFrame.BeginAnimation(OpacityProperty,
-                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)));
+                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200)));
+            PopIn(CursorScale, 0.9, 240);
         }
     }
 
@@ -830,13 +876,25 @@ public partial class MainWindow : Window
         var src = game.Icon as ImageSource;
         if (ReferenceEquals(AcrylicImage.Source, src)) return;
 
-        // cross-fade to the new game's backdrop
+        // cross-fade to the new game's backdrop, settling in from a slightly
+        // larger scale so switching games feels like a slow camera move
         AcrylicImage.Source = src;
         AcrylicImage.BeginAnimation(OpacityProperty,
-            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(450))
+            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(480))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
+
+        AcrylicScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        AcrylicScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        AcrylicScale.ScaleX = AcrylicScale.ScaleY = 1.06;
+        var zoomEase = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var duration = TimeSpan.FromMilliseconds(900);
+        AcrylicScale.BeginAnimation(ScaleTransform.ScaleXProperty,
+            new DoubleAnimation(1.06, 1, duration) { EasingFunction = zoomEase });
+        AcrylicScale.BeginAnimation(ScaleTransform.ScaleYProperty,
+            new DoubleAnimation(1.06, 1, duration) { EasingFunction = zoomEase });
+
         // the dark veil Border in XAML keeps the tiles readable on top
     }
 
@@ -849,18 +907,17 @@ public partial class MainWindow : Window
         if (Interlocked.CompareExchange(ref _padPollBusy, 1, 0) != 0) return;
         try
         {
-            // Only react to the gamepad while THIS window is the foreground window
-            // of its session. joyGetPosEx reads the device regardless of window
-            // state, so without this check a backgrounded GameManager would keep
-            // navigating - and launch games on A - while the user plays a
-            // fullscreen game with the same pad. Keyboard/touch are unaffected:
-            // they only ever reach a focused window anyway.
-            // Exception: while OUR Advanced menu is open the foreground window is
-            // the menu's popup HWND - same process, same intent - so input passes.
+            // Only react to the gamepad while this launcher (or one of its own
+            // popups/dialogs) owns the foreground window of this session.
+            // joyGetPosEx reads the device regardless of window state, so without
+            // this check a backgrounded GameManager would keep navigating - and
+            // launch games on A - while the user plays a fullscreen game with the
+            // same pad. Keyboard/touch are unaffected: they only ever reach a
+            // focused window anyway.
             if (_hwnd != IntPtr.Zero)
             {
                 IntPtr fg = GetForegroundWindow();
-                if (fg != _hwnd && !IsOwnProcess(fg))
+                if (fg != _hwnd && !IsOwnProcessWindow(fg))
                 {
                     return;
                 }
@@ -879,12 +936,12 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>True while the Advanced menu or the About dialog is open and the
-    /// given window belongs to this process (the menu popup / About window).
-    /// MessageBoxes and other apps still block pad input.</summary>
-    private bool IsOwnProcess(IntPtr hwnd)
+    /// <summary>True when the given foreground window belongs to this process
+    /// (our Advanced menu popup, About/Power/Confirm dialogs). Other apps -
+    /// including a running game - still block pad input.</summary>
+    private static bool IsOwnProcessWindow(IntPtr hwnd)
     {
-        if ((_openMenu == null && _aboutWindow == null && _powerDialog == null && _confirmDialog == null) || hwnd == IntPtr.Zero) return false;
+        if (hwnd == IntPtr.Zero) return false;
         try
         {
             GetWindowThreadProcessId(hwnd, out uint pid);
@@ -1181,8 +1238,8 @@ public partial class MainWindow : Window
         menu.VerticalOffset = 8;
 
         // While the menu is open it owns the gamepad: the popup HWND is the
-        // foreground window (same process - see IsOwnProcess), and pad input
-        // drives menu navigation instead of the tile grid.
+        // foreground window (same process - see IsOwnProcessWindow), and pad
+        // input drives menu navigation instead of the tile grid.
         _openMenu = menu;
         _menuItems = menu.Items.OfType<MenuItem>().ToList();
         _menuIndex = 0;
@@ -1274,7 +1331,7 @@ public partial class MainWindow : Window
         {
             Owner = this
         };
-        // track it while modal so pad B can close it (see IsOwnProcess/HandlePadInput)
+        // track it while modal so pad B can close it (see HandlePadInput)
         _aboutWindow = about;
         try
         {

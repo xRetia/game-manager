@@ -6,7 +6,7 @@
         Width="1100" Height="700"
         WindowState="Maximized"
         SourceInitialized="OnSourceInit"
-        KeyDown="OnWindowKeyDown">
+        PreviewKeyDown="OnWindowKeyDown">
 
     <Window.Background>
         <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
@@ -18,51 +18,74 @@
     <DockPanel>
 
         <!-- header -->
-        <Border DockPanel.Dock="Top" Height="70" Background="#181C22"
-                BorderBrush="#2C3240" BorderThickness="0,0,0,1">
+        <Border DockPanel.Dock="Top" Height="76" BorderBrush="#272E3D" BorderThickness="0,0,0,1">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#1D222D" Offset="0"/>
+                    <GradientStop Color="#14181F" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
             <Grid x:Name="HeaderRoot">
                 <DockPanel>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
-                        <TextBlock Text="{x:Static gm:Strings.AppTitle}" FontSize="19" FontWeight="Bold"
-                                   Foreground="#EEF0F5" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="26,0,0,0">
+                        <!-- brand mark -->
+                        <Border Width="36" Height="36" CornerRadius="11" VerticalAlignment="Center">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#728FFF" Offset="0"/>
+                                    <GradientStop Color="#4A5FD8" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.Effect>
+                                <DropShadowEffect ShadowDepth="0" BlurRadius="20" Color="#4D6BFF" Opacity="0.5"/>
+                            </Border.Effect>
+                            <TextBlock Text="&#xE7FC;" FontFamily="Segoe MDL2 Assets" FontSize="17"
+                                       Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{x:Static gm:Strings.AppTitle}" FontSize="20" FontWeight="SemiBold"
+                                   Foreground="#F2F4F8" VerticalAlignment="Center" Margin="14,0,0,0">
                             <TextBlock.Effect>
-                                <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#6082FF" Opacity="0.35"/>
+                                <DropShadowEffect ShadowDepth="0" BlurRadius="18" Color="#6082FF" Opacity="0.3"/>
                             </TextBlock.Effect>
                         </TextBlock>
-                        <TextBlock x:Name="CountText" Text="" Foreground="#8C94A5"
-                                   FontSize="13" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                        <!-- library size pill -->
+                        <Border Background="#232A38" CornerRadius="9" Padding="9,3"
+                                Margin="14,0,0,0" VerticalAlignment="Center"
+                                BorderBrush="#303A4B" BorderThickness="1">
+                            <TextBlock x:Name="CountText" Text="" Foreground="#9AA3B4" FontSize="12"/>
+                        </Border>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
-                                VerticalAlignment="Center" Margin="0,0,22,0">
-                        <Button x:Name="RefreshButton" Style="{StaticResource ChromeButton}" Click="OnRefresh" Margin="0,0,10,0">
+                                VerticalAlignment="Center" Margin="0,0,24,0">
+                        <Button x:Name="RefreshButton" Style="{StaticResource ChromeButton}" Click="OnRefresh" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                           Foreground="#A7B2C7" VerticalAlignment="Center"/>
                                 <TextBlock Text="{x:Static gm:Strings.BtnRefresh}" Margin="7,0,0,0"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="FullScreenButton" Style="{StaticResource ChromeButton}" Click="OnFullScreen" Margin="0,0,10,0">
+                        <Button x:Name="FullScreenButton" Style="{StaticResource ChromeButton}" Click="OnFullScreen" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE740;" FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                           Foreground="#A7B2C7" VerticalAlignment="Center"/>
                                 <TextBlock Text="{x:Static gm:Strings.BtnFullScreen}" Margin="7,0,0,0"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="AdvancedButton" Style="{StaticResource ChromeButton}" Click="OnAdvanced" Margin="0,0,10,0">
+                        <Button x:Name="AdvancedButton" Style="{StaticResource ChromeButton}" Click="OnAdvanced" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                           Foreground="#A7B2C7" VerticalAlignment="Center"/>
                                 <TextBlock Text="{x:Static gm:Strings.BtnAdvanced}" Margin="7,0,0,0"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="AboutButton" Style="{StaticResource ChromeButton}" Click="OnAbout" Margin="0,0,10,0">
+                        <Button x:Name="AboutButton" Style="{StaticResource ChromeButton}" Click="OnAbout" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                           Foreground="#A7B2C7" VerticalAlignment="Center"/>
                                 <TextBlock Text="{x:Static gm:Strings.BtnAbout}" Margin="7,0,0,0"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
@@ -70,7 +93,7 @@
                         <Button x:Name="PowerButton" Style="{StaticResource ChromeButton}" Click="OnPower">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE7E8;" FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                           Foreground="#9AA3B4" VerticalAlignment="Center"/>
+                                           Foreground="#A7B2C7" VerticalAlignment="Center"/>
                                 <TextBlock Text="{x:Static gm:Strings.BtnPower}" Margin="7,0,0,0"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
@@ -79,7 +102,8 @@
                 </DockPanel>
 
                 <!-- console-style chrome focus: glides across the header buttons
-                     while the gamepad/keyboard navigates them -->
+                     while the gamepad/keyboard navigates them. The scale part is
+                     only used for the pop when the focus enters the header. -->
                 <Border x:Name="ChromeFocus" IsHitTestVisible="False" Visibility="Collapsed"
                         HorizontalAlignment="Left" VerticalAlignment="Top"
                         Width="80" Height="30" CornerRadius="12" Opacity="0"
@@ -89,7 +113,10 @@
                         <DropShadowEffect ShadowDepth="0" BlurRadius="18" Color="#6082FF" Opacity="0.8"/>
                     </Border.Effect>
                     <Border.RenderTransform>
-                        <TranslateTransform x:Name="ChromeTransform"/>
+                        <TransformGroup>
+                            <ScaleTransform x:Name="ChromeScale"/>
+                            <TranslateTransform x:Name="ChromeTransform"/>
+                        </TransformGroup>
                     </Border.RenderTransform>
                     <!-- launch stream: a light band sweeping around the frame while
                          the selected game starts up. The gradient itself rotates,
@@ -114,11 +141,18 @@
             </Grid>
         </Border>
 
-        <!-- game area: acrylic backdrop + touch-scrollable tile grid -->
-        <Grid>
+        <!-- game area: acrylic backdrop + touch-scrollable tile grid.
+             Clipped so the backdrop's zoom animation cannot spill over the
+             header (this Grid is painted after it in the DockPanel). -->
+        <Grid ClipToBounds="True">
             <!-- backdrop: BitmapCache caches the 120px blur result so scrolling/tile
-                 animations never re-run the full-screen gaussian every frame -->
-            <Image x:Name="AcrylicImage" Source="{x:Null}" Stretch="UniformToFill">
+                 animations never re-run the full-screen gaussian every frame.
+                 The scale transform adds a slow settle when a game is selected. -->
+            <Image x:Name="AcrylicImage" Source="{x:Null}" Stretch="UniformToFill"
+                   RenderTransformOrigin="0.5,0.5">
+                <Image.RenderTransform>
+                    <ScaleTransform x:Name="AcrylicScale"/>
+                </Image.RenderTransform>
                 <Image.Effect>
                     <BlurEffect KernelType="Gaussian" Radius="120"/>
                 </Image.Effect>
@@ -126,7 +160,18 @@
                     <BitmapCache/>
                 </Image.CacheMode>
             </Image>
-            <Border Background="#D212141B" IsHitTestVisible="False"/>
+            <Border Background="#B812141B" IsHitTestVisible="False"/>
+            <!-- vignette: pulls the eye to the tile grid and hides the blurred
+                 backdrop edges -->
+            <Border IsHitTestVisible="False">
+                <Border.Background>
+                    <RadialGradientBrush Center="0.5,0.42" GradientOrigin="0.5,0.42"
+                                         RadiusX="0.78" RadiusY="0.78">
+                        <GradientStop Color="#00000000" Offset="0.45"/>
+                        <GradientStop Color="#7A000000" Offset="1"/>
+                    </RadialGradientBrush>
+                </Border.Background>
+            </Border>
 
             <ScrollViewer x:Name="Scroller"
                           VerticalScrollBarVisibility="Hidden"
@@ -134,7 +179,8 @@
                           PanningMode="VerticalOnly"
                           ManipulationBoundaryFeedback="OnManipulationBoundary">
                 <Grid x:Name="TilesHost">
-                    <ItemsControl x:Name="TilesControl" MouseDoubleClick="OnTileDoubleClick">
+                    <ItemsControl x:Name="TilesControl" MouseDoubleClick="OnTileDoubleClick"
+                                  Margin="18,16,18,30">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="5" VerticalAlignment="Top"/>
@@ -154,13 +200,17 @@
                     <Border x:Name="CursorFrame" IsHitTestVisible="False" Visibility="Collapsed"
                             HorizontalAlignment="Left" VerticalAlignment="Top"
                             Width="100" Height="100" CornerRadius="21" Opacity="0"
-                            BorderThickness="3" BorderBrush="#A9BCFF"
+                            BorderThickness="2.6" BorderBrush="#A9BCFF"
                             RenderTransformOrigin="0.5,0.5">
                         <Border.Effect>
                             <DropShadowEffect ShadowDepth="0" BlurRadius="44" Color="#6082FF" Opacity="0.95"/>
                         </Border.Effect>
                         <Border.RenderTransform>
-                            <TranslateTransform x:Name="CursorTransform"/>
+                            <TransformGroup>
+                                <!-- scale is only driven for the pop when the frame appears -->
+                                <ScaleTransform x:Name="CursorScale"/>
+                                <TranslateTransform x:Name="CursorTransform"/>
+                            </TransformGroup>
                         </Border.RenderTransform>
                         <Border.CacheMode>
                             <BitmapCache/>
@@ -192,95 +242,120 @@
                 </Grid>
             </ScrollViewer>
 
+            <!-- soft shadow cast by the header; drawn over the backdrop so it
+                 darkens content scrolling up under the header instead of
+                 reserving a dead band between the header and the tiles -->
+            <Border Height="18" VerticalAlignment="Top" IsHitTestVisible="False">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#4A000000" Offset="0"/>
+                        <GradientStop Color="#00000000" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+
             <TextBlock x:Name="EmptyHint" Visibility="Collapsed"
-                       Text="" Foreground="#828A9B" FontSize="15"
-                       Margin="64,56,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                       Text="" Foreground="#8A93A6" FontSize="15" LineHeight="25"
+                       TextAlignment="Center" Margin="48"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
             <!-- console-style input hint, bottom-right; swaps between gamepad
                  and keyboard glyphs based on the last used input device -->
             <Border x:Name="InputHint" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                    Margin="0,0,22,18" IsHitTestVisible="False" Opacity="0"
-                    Background="#E6151922" CornerRadius="17" Padding="15,8"
-                    BorderBrush="#2C3344" BorderThickness="1">
+                    Margin="0,0,24,20" IsHitTestVisible="False" Opacity="0"
+                    Background="#EE141821" CornerRadius="19" Padding="16,9"
+                    BorderBrush="#303A4C" BorderThickness="1">
                 <Border.Effect>
-                    <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#000000" Opacity="0.35"/>
+                    <DropShadowEffect ShadowDepth="0" BlurRadius="22" Color="#000000" Opacity="0.45"/>
                 </Border.Effect>
                 <Grid>
                     <!-- gamepad variant: dpad + A (shown once pad input is detected) -->
                     <StackPanel x:Name="PadHints" Orientation="Horizontal" Visibility="Collapsed">
-                        <Grid Width="17" Height="17" VerticalAlignment="Center">
-                            <Rectangle Width="5.5" Height="16" RadiusX="1.6" RadiusY="1.6"
-                                       Fill="#7A86A0" HorizontalAlignment="Center"/>
-                            <Rectangle Width="16" Height="5.5" RadiusX="1.6" RadiusY="1.6"
-                                       Fill="#7A86A0" VerticalAlignment="Center"/>
+                        <Grid Width="18" Height="18" VerticalAlignment="Center">
+                            <Rectangle Width="6" Height="17" RadiusX="1.8" RadiusY="1.8"
+                                       Fill="#8B97B0" HorizontalAlignment="Center"/>
+                            <Rectangle Width="17" Height="6" RadiusX="1.8" RadiusY="1.8"
+                                       Fill="#8B97B0" VerticalAlignment="Center"/>
                             <Rectangle Width="3.5" Height="3.5" Fill="#151922"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
-                        <TextBlock Text="{x:Static gm:Strings.HintNavigate}" Foreground="#9AA3B4" FontSize="12.5"
-                                   VerticalAlignment="Center" Margin="7,0,0,0"/>
-                        <Rectangle Width="1" Height="12" Fill="#2C3344" Margin="13,1"
+                        <TextBlock Text="{x:Static gm:Strings.HintNavigate}" Foreground="#A6AEBD" FontSize="12.5"
+                                   VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <Rectangle Width="1" Height="14" Fill="#333D4F" Margin="14,1"
                                    VerticalAlignment="Center"/>
-                        <Grid Width="17" Height="17" VerticalAlignment="Center">
-                            <Ellipse Fill="#242C48" Stroke="#7D93FF" StrokeThickness="1.6"/>
-                            <TextBlock Text="A" Foreground="#BAC6FF" FontSize="10.5" FontWeight="Bold"
+                        <Grid Width="18" Height="18" VerticalAlignment="Center">
+                            <Ellipse Fill="#232B45" Stroke="#7D93FF" StrokeThickness="1.6"/>
+                            <TextBlock Text="A" Foreground="#C3CDFF" FontSize="10.5" FontWeight="Bold"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Margin="0,-0.5,0,0"/>
                         </Grid>
-                        <TextBlock Text="{x:Static gm:Strings.HintOpen}" Foreground="#9AA3B4" FontSize="12.5"
-                                   VerticalAlignment="Center" Margin="7,0,0,0"/>
+                        <TextBlock Text="{x:Static gm:Strings.HintOpen}" Foreground="#A6AEBD" FontSize="12.5"
+                                   VerticalAlignment="Center" Margin="8,0,0,0"/>
                     </StackPanel>
 
-                    <!-- keyboard variant: vector arrow-key cluster + Enter keycap
-                         (default until pad input) -->
+                    <!-- keyboard variant: vector arrow-key cluster + a wide
+                         return keycap (default until pad input) -->
                     <StackPanel x:Name="KeyHints" Orientation="Horizontal">
                         <!-- four arrow keycaps: up / left / down / right -->
-                        <Canvas Width="31" Height="20" VerticalAlignment="Center">
-                            <Border Canvas.Left="11" Canvas.Top="0" Width="9" Height="9"
-                                     CornerRadius="2" BorderThickness="1"
-                                    BorderBrush="#7A86A0" Background="#1E242F">
-                                <Path Data="M1.9,4.6 L3.5,2.4 L5.1,4.6" Stroke="#9AA3B4"
-                                      StrokeThickness="1.1" StrokeStartLineCap="Round"
+                        <Canvas Width="36" Height="24" VerticalAlignment="Center">
+                            <Border Canvas.Left="12.5" Canvas.Top="0" Width="11" Height="11"
+                                    CornerRadius="2.75" BorderThickness="1"
+                                    BorderBrush="#6E7B99" Background="#1D2431">
+                                <Path Data="M3.1,6.8 L5.5,4.2 L7.9,6.8" Stroke="#B4BDCC"
+                                      StrokeThickness="1.25" StrokeStartLineCap="Round"
                                       StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                             </Border>
-                            <Border Canvas.Left="0" Canvas.Top="11" Width="9" Height="9"
-                                     CornerRadius="2" BorderThickness="1"
-                                    BorderBrush="#7A86A0" Background="#1E242F">
-                                <Path Data="M4.6,1.9 L2.4,3.5 L4.6,5.1" Stroke="#9AA3B4"
-                                      StrokeThickness="1.1" StrokeStartLineCap="Round"
+                            <Border Canvas.Left="0" Canvas.Top="12.5" Width="11" Height="11"
+                                    CornerRadius="2.75" BorderThickness="1"
+                                    BorderBrush="#6E7B99" Background="#1D2431">
+                                <Path Data="M6.8,3.1 L4.2,5.5 L6.8,7.9" Stroke="#B4BDCC"
+                                      StrokeThickness="1.25" StrokeStartLineCap="Round"
                                       StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                             </Border>
-                            <Border Canvas.Left="11" Canvas.Top="11" Width="9" Height="9"
-                                     CornerRadius="2" BorderThickness="1"
-                                    BorderBrush="#7A86A0" Background="#1E242F">
-                                <Path Data="M1.9,2.4 L3.5,4.6 L5.1,2.4" Stroke="#9AA3B4"
-                                      StrokeThickness="1.1" StrokeStartLineCap="Round"
+                            <Border Canvas.Left="12.5" Canvas.Top="12.5" Width="11" Height="11"
+                                    CornerRadius="2.75" BorderThickness="1"
+                                    BorderBrush="#6E7B99" Background="#1D2431">
+                                <Path Data="M3.1,4.2 L5.5,6.8 L7.9,4.2" Stroke="#B4BDCC"
+                                      StrokeThickness="1.25" StrokeStartLineCap="Round"
                                       StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                             </Border>
-                            <Border Canvas.Left="22" Canvas.Top="11" Width="9" Height="9"
-                                     CornerRadius="2" BorderThickness="1"
-                                    BorderBrush="#7A86A0" Background="#1E242F">
-                                <Path Data="M2.4,1.9 L4.6,3.5 L2.4,5.1" Stroke="#9AA3B4"
-                                      StrokeThickness="1.1" StrokeStartLineCap="Round"
+                            <Border Canvas.Left="25" Canvas.Top="12.5" Width="11" Height="11"
+                                    CornerRadius="2.75" BorderThickness="1"
+                                    BorderBrush="#6E7B99" Background="#1D2431">
+                                <Path Data="M4.2,3.1 L6.8,5.5 L4.2,7.9" Stroke="#B4BDCC"
+                                      StrokeThickness="1.25" StrokeStartLineCap="Round"
                                       StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                             </Border>
                         </Canvas>
-                        <TextBlock Text="{x:Static gm:Strings.HintNavigate}" Foreground="#9AA3B4" FontSize="12.5"
-                                   VerticalAlignment="Center" Margin="7,0,0,0"/>
+                        <TextBlock Text="{x:Static gm:Strings.HintNavigate}" Foreground="#A6AEBD" FontSize="12.5"
+                                   VerticalAlignment="Center" Margin="9,0,0,0"/>
 
-                        <Rectangle Width="1" Height="12" Fill="#2C3344" Margin="13,1"
+                        <Rectangle Width="1" Height="15" Fill="#333D4F" Margin="14,1"
                                    VerticalAlignment="Center"/>
 
-                        <!-- Enter keycap: wide, like the real key, taller than
-                             the arrow keycaps so it reads as the primary action -->
-                        <Border Width="26" Height="16" CornerRadius="3" BorderThickness="1"
-                                BorderBrush="#7D93FF" Background="#242C48"
-                                VerticalAlignment="Center">
-                            <Path Data="M19.2,3.9 L19.2,8 L6.8,8 M9.9,5.4 L6.8,8 L9.9,10.6"
-                                  Stroke="#BAC6FF" StrokeThickness="1.4" StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                        <!-- return keycap: wide like the real key, with a proper
+                             return arrow; the blue tint sets it apart as the
+                             primary action next to the neutral arrow caps -->
+                        <Border Width="34" Height="20" CornerRadius="5" BorderThickness="1"
+                                BorderBrush="#5E6F9E" VerticalAlignment="Center">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#39445C" Offset="0"/>
+                                    <GradientStop Color="#232B3C" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Grid>
+                                <!-- top highlight: a real key's lit upper edge -->
+                                <Border CornerRadius="4" Margin="1" BorderThickness="0,1,0,0"
+                                        BorderBrush="#2EFFFFFF"/>
+                                <Path Data="M22.5,4.6 L22.5,9.6 L9.5,9.6 M12.4,6.8 L9.5,9.6 L12.4,12.4"
+                                      Stroke="#C3CDFF" StrokeThickness="1.6"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round"/>
+                            </Grid>
                         </Border>
-                        <TextBlock Text="{x:Static gm:Strings.HintOpen}" Foreground="#9AA3B4" FontSize="12.5"
-                                   VerticalAlignment="Center" Margin="7,0,0,0"/>
+                        <TextBlock Text="{x:Static gm:Strings.HintOpen}" Foreground="#A6AEBD" FontSize="12.5"
+                                   VerticalAlignment="Center" Margin="8,0,0,0"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -291,11 +366,11 @@
                  are already debounced inside GameInfo.Launch(). -->
             <Border x:Name="LaunchToast" Visibility="Collapsed" Opacity="0"
                     HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                    Margin="0,0,0,58"
-                    Background="#E6151922" CornerRadius="19" Padding="18,11"
-                    BorderBrush="#2C3344" BorderThickness="1">
+                    Margin="0,0,0,60"
+                    Background="#EE141821" CornerRadius="20" Padding="18,11"
+                    BorderBrush="#303A4C" BorderThickness="1">
                 <Border.Effect>
-                    <DropShadowEffect ShadowDepth="0" BlurRadius="16" Color="#000000" Opacity="0.35"/>
+                    <DropShadowEffect ShadowDepth="0" BlurRadius="22" Color="#000000" Opacity="0.45"/>
                 </Border.Effect>
                 <Border.RenderTransform>
                     <TranslateTransform x:Name="LaunchToastShift" Y="8"/>
